@@ -206,15 +206,11 @@ def checkReferenceReversed(nrBits, polynomial):
 						nrBits, polynomial))
 
 def compareGeneratedImpl(optimize, alg, crcParameters):
-	polynomial = crcParameters["polynomial"]
-	nrBits = crcParameters["nrBits"]
-	shiftRight = crcParameters["shiftRight"]
-	gen = CrcGen(P=polynomial,
-		     nrBits=nrBits,
-		     shiftRight=shiftRight,
+	gen = CrcGen(P=crcParameters["polynomial"],
+		     nrBits=crcParameters["nrBits"],
+		     shiftRight=crcParameters["shiftRight"],
 		     optimize=optimize)
-	gen.runTests(name=alg,
-		     extra=("-O=%d" % optimize))
+	gen.runTests(name=alg, extra=("-O=%d" % optimize))
 
 if __name__ == "__main__":
 	assert bitreverse(0xE0, 8) == 0x07
