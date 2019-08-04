@@ -114,9 +114,7 @@ class Bit(AbstractBit):
 		return "%s[%d]" % (self.name, self.index)
 
 	def gen_c(self):
-		if self.index:
-			return "((%s >> %du) & 1u)" % (self.name, self.index)
-		return "(%s & 1u)" % (self.name)
+		return "b(%s, %d)" % (self.name, self.index)
 
 	def gen_verilog(self):
 		return "%s[%d]" % (self.name, self.index)
@@ -433,6 +431,11 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 		ret.append("")
 		ret.extend("// " + l for l in self.__algDescription().splitlines())
 		ret.append("")
+		ret.append("#ifdef b")
+		ret.append("# undef b")
+		ret.append("#endif")
+		ret.append("#define b(x, b) (((x) >> (b)) & 1u)")
+		ret.append("")
 		ret.append("%s%s%s %s(%s %s, uint8_t %s)" % ("static " if static else "",
 							     "inline " if inline else "",
 							     cType,
@@ -445,13 +448,12 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 		for i, bit in enumerate(word):
 			if i:
 				operator = "|="
-				shift = " << %du" % i
 			else:
-				operator = "="
-				shift = ""
-			ret.append("\tret %s (%s)%s;" % (operator, bit.gen_c(), shift))
+				operator = " ="
+			ret.append("\tret %s (%s)%s << %d;" % (operator, cType, bit.gen_c(), i))
 		ret.append("\treturn ret;")
 		ret.append("}")
+		ret.append("#undef b")
 		ret.append("")
 		ret.append("#endif /* %s_H_ */" % funcName.upper())
 		return "\n".join(ret)
