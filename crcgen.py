@@ -26,6 +26,7 @@ import sys
 
 
 __all__ = [
+	"CRC_PARAMETERS",
 	"CrcGen",
 ]
 
