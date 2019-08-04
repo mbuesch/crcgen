@@ -21,8 +21,6 @@
 #
 
 from dataclasses import dataclass
-import argparse
-import sys
 
 
 __all__ = [
@@ -534,6 +532,7 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 				shutil.rmtree(tmpdir, ignore_errors=True)
 
 if __name__ == "__main__":
+	import sys, argparse
 	try:
 		def argInt(string):
 			if string.startswith("0x"):
