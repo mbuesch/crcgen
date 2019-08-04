@@ -416,7 +416,10 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 		 crcVarName="crc",
 		 dataVarName="data",
 		 static=False,
-		 inline=False):
+		 inline=False,
+		 declOnly=False,
+		 includeGuards=True,
+		 includes=True):
 		word = self.__gen(dataVarName, crcVarName)
 		cType = "uint%s_t" % self.__nrBits
 		ret = []
@@ -424,82 +427,110 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 		ret.append("")
 		ret.extend("// " + l for l in self.__header().splitlines())
 		ret.append("")
-		ret.append("#ifndef %s_H_" % funcName.upper())
-		ret.append("#define %s_H_" % funcName.upper())
-		ret.append("")
-		ret.append("#include <stdint.h>")
+		if includeGuards:
+			ret.append("#ifndef %s_H_" % funcName.upper())
+			ret.append("#define %s_H_" % funcName.upper())
+		if includes:
+			ret.append("")
+			ret.append("#include <stdint.h>")
 		ret.append("")
 		ret.extend("// " + l for l in self.__algDescription().splitlines())
 		ret.append("")
-		ret.append("#ifdef b")
-		ret.append("# undef b")
-		ret.append("#endif")
-		ret.append("#define b(x, b) (((x) >> (b)) & 1u)")
-		ret.append("")
-		ret.append("%s%s%s %s(%s %s, uint8_t %s)" % ("static " if static else "",
-							     "inline " if inline else "",
-							     cType,
-							     funcName,
-							     cType,
-							     crcVarName,
-							     dataVarName))
-		ret.append("{")
-		ret.append("\t%s ret;" % cType)
-		for i, bit in enumerate(word):
-			if i:
-				operator = "|="
-			else:
-				operator = " ="
-			ret.append("\tret %s (%s)%s << %d;" % (operator, cType, bit.gen_c(), i))
-		ret.append("\treturn ret;")
-		ret.append("}")
-		ret.append("#undef b")
-		ret.append("")
-		ret.append("#endif /* %s_H_ */" % funcName.upper())
+		if not declOnly:
+			ret.append("#ifdef b")
+			ret.append("# undef b")
+			ret.append("#endif")
+			ret.append("#define b(x, b) (((x) >> (b)) & 1u)")
+			ret.append("")
+		ret.append("{extern}{static}{inline}{cType} "
+			   "{func}({cType} {crcVar}, uint8_t {dataVar}){end}".format(
+			   extern="extern " if declOnly else "",
+			   static="static " if static and not declOnly else "",
+			   inline="inline " if inline and not declOnly else "",
+			   cType=cType,
+			   func=funcName,
+			   crcVar=crcVarName,
+			   dataVar=dataVarName,
+			   end=";" if declOnly else "",
+		))
+		if not declOnly:
+			ret.append("{")
+			ret.append("\t%s ret;" % cType)
+			for i, bit in enumerate(word):
+				if i:
+					operator = "|="
+				else:
+					operator = " ="
+				ret.append("\tret %s (%s)%s << %d;" % (operator, cType, bit.gen_c(), i))
+			ret.append("\treturn ret;")
+			ret.append("}")
+			ret.append("#undef b")
+		if includeGuards:
+			ret.append("")
+			ret.append("#endif /* %s_H_ */" % funcName.upper())
 		return "\n".join(ret)
 
 	def runTests(self, name=None, extra=None):
-		import random
+		tmpdir = None
+		try:
+			import random
+			rng = random.Random()
+			rng.seed(424242)
 
-		rng = random.Random()
-		rng.seed(424242)
+			print("Testing%s P=0x%X, nrBits=%d, shiftRight=%d %s..." % (
+			      (" " + name) if name else "",
+			      self.__P,
+			      self.__nrBits,
+			      int(bool(self.__shiftRight)),
+			      (extra + " ") if extra else ""))
 
-		print("Testing%s P=0x%X, nrBits=%d, shiftRight=%d %s..." % (
-		      (" " + name) if name else "",
-		      self.__P,
-		      self.__nrBits,
-		      int(bool(self.__shiftRight)),
-		      (extra + " ") if extra else ""))
+			# Generate the CRC function as Python code.
+			pyCode = self.genPython(funcName="crc_pyimpl")
+			execEnv = {}
+			exec(pyCode, execEnv)
+			crc_pyimpl = execEnv["crc_pyimpl"]
 
-		# Generate the CRC function as Python code.
-		pyCode = self.genPython(funcName="crc_func")
-		execEnv = {}
-		exec(pyCode, execEnv)
-		crc_func = execEnv["crc_func"]
+			# Generate the CRC function as C code.
+			import os, time, importlib, shutil
+			from cffi import FFI
+			ffibuilder = FFI()
+			ffibuilder.set_source("testmod_crcgen", self.genC())
+			ffibuilder.cdef(self.genC(declOnly=True,
+						  includeGuards=False,
+						  includes=False))
+			tmpdir = "tmp_%d_%d" % (os.getpid(), int(time.time() * 1e6))
+			ffibuilder.compile(tmpdir=tmpdir, verbose=False)
+			testmod_crcgen = importlib.import_module(tmpdir + ".testmod_crcgen")
+			crc_cimpl = testmod_crcgen.lib.crc
 
-		mask = (1 << self.__nrBits) - 1
-		for i in range(0xFF + 1):
-			if i == 0:
-				crc = 0
-			elif i == 1:
-				crc = mask
-			else:
-				crc = rng.randint(1, mask - 1)
-			for data in range(0xFF + 1):
-				a = CrcReference.crc(
-					crc=crc,
-					data=data,
-					polynomial=self.__P,
-					nrBits=self.__nrBits,
-					shiftRight=self.__shiftRight)
-				b = crc_func(crc, data)
-				if a != b:
-					raise CrcGenError("Test failed. "
-						"(P=0x%X, nrBits=%d, shiftRight=%d, "
-						"a=0x%X, b=0x%X)" % (
-						self.__P, self.__nrBits,
-						int(bool(self.__shiftRight)),
-						a, b))
+			# Compare the reference implementation to the Python and C code.
+			mask = (1 << self.__nrBits) - 1
+			for i in range(0xFF + 1):
+				if i == 0:
+					crc = 0
+				elif i == 1:
+					crc = mask
+				else:
+					crc = rng.randint(1, mask - 1)
+				for data in range(0xFF + 1):
+					ref = CrcReference.crc(
+						crc=crc,
+						data=data,
+						polynomial=self.__P,
+						nrBits=self.__nrBits,
+						shiftRight=self.__shiftRight)
+					py = crc_pyimpl(crc, data)
+					c = crc_cimpl(crc, data)
+					if ref != py or ref != c:
+						raise CrcGenError("Test failed. "
+							"(P=0x%X, nrBits=%d, shiftRight=%d, "
+							"ref=0x%X, py=0x%X, c=0x%X)" % (
+							self.__P, self.__nrBits,
+							int(bool(self.__shiftRight)),
+							ref, py, c))
+		finally:
+			if tmpdir:
+				shutil.rmtree(tmpdir, ignore_errors=True)
 
 if __name__ == "__main__":
 	try:
