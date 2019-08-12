@@ -258,7 +258,8 @@ class CrcGen(object):
 
 	def __gen(self, dataVarName, crcVarName):
 		nrBits = self.__nrBits
-		assert 8 <= nrBits <= 64, "Invalid nrBits"
+		if not 8 <= nrBits <= 64:
+			raise CrcGenError("Invalid number of bits.")
 
 		# Construct the function input data word.
 		inData = Word(*(
