@@ -237,6 +237,7 @@ if __name__ == "__main__":
 			 "x^8 + x^2 + x + 1",
 			 8, False),
 		):
+		print("Testing %s..." % polyString)
 		if poly2int(polyString, nrBits, shiftRight) != poly:
 			raise Exception("Polynomial '%s' != 0x%X" % (polyString, poly))
 		if int2poly(poly, nrBits, shiftRight) != polyString:
