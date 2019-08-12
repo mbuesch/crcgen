@@ -33,6 +33,16 @@ __all__ = [
 
 
 CRC_PARAMETERS = {
+	"CRC-64-ECMA" : {
+		"polynomial"	: 0xC96C5795D7870F42,
+		"nrBits"	: 64,
+		"shiftRight"	: True,
+	},
+	"CRC-64-ISO" : {
+		"polynomial"	: 0xD800000000000000,
+		"nrBits"	: 64,
+		"shiftRight"	: True,
+	},
 	"CRC-32" : {
 		"polynomial"	: 0xEDB88320,
 		"nrBits"	: 32,
@@ -248,7 +258,7 @@ class CrcGen(object):
 
 	def __gen(self, dataVarName, crcVarName):
 		nrBits = self.__nrBits
-		assert nrBits in (8, 16, 32), "Invalid nrBits"
+		assert 8 <= nrBits <= 64, "Invalid nrBits"
 
 		# Construct the function input data word.
 		inData = Word(*(
@@ -435,7 +445,15 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 		 includeGuards=True,
 		 includes=True):
 		word = self.__gen(dataVarName, crcVarName)
-		cType = "uint%s_t" % self.__nrBits
+		if self.__nrBits <= 8:
+			cTypeBits = 8
+		elif self.__nrBits <= 16:
+			cTypeBits = 16
+		elif self.__nrBits <= 32:
+			cTypeBits = 32
+		else:
+			cTypeBits = 64
+		cType = "uint%s_t" % cTypeBits
 		ret = []
 		ret.append("// vim: ts=4 sw=4 noexpandtab")
 		ret.append("")
@@ -615,7 +633,7 @@ if __name__ == "__main__":
 			       help="Select the CRC algorithm. "
 				    "Individual algorithm parameters (e.g. polynomial) can be overridden with the options below.")
 		p.add_argument("-P", "--polynomial", type=str, help="CRC polynomial")
-		p.add_argument("-B", "--nr-bits", type=argInt, choices=[8, 16, 32], help="Number of bits")
+		p.add_argument("-B", "--nr-bits", type=argInt, help="Number of bits (8-64)")
 		g = p.add_mutually_exclusive_group()
 		g.add_argument("-R", "--shift-right", action="store_true", help="CRC algorithm shift direction: right shift")
 		g.add_argument("-L", "--shift-left", action="store_true", help="CRC algorithm shift direction: left shift")
@@ -627,6 +645,10 @@ if __name__ == "__main__":
 		p.add_argument("-I", "--inline", action="store_true", help="Generate inline C function")
 		p.add_argument("-O", "--optimize", type=argInt, default=CrcGen.OPT_ALL, help="Enable algorithm optimizer steps")
 		args = p.parse_args()
+
+		if (args.nr_bits is not None and
+		    (args.nr_bits < 8 or args.nr_bits > 64)):
+			raise CrcGenError("Invalid -B|--nr-bits argument. Valid range is 8-64.")
 
 		if args.polynomial_convert is not None:
 			if args.nr_bits is None:
