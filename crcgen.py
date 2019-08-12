@@ -330,9 +330,11 @@ NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE
 USE OR PERFORMANCE OF THIS SOFTWARE."""
 
 	def __algDescription(self):
-		return ("CRC polynomial      = 0x%X (hex)\n"
-			"CRC width           = %d bits\n"
-			"CRC shift direction = %s\n" % (
+		return ("CRC polynomial coefficients: %s\n"
+			"                             0x%X (hex)\n"
+			"CRC width:                   %d bits\n"
+			"CRC shift direction:         %s\n" % (
+			int2poly(self.__P, self.__nrBits, self.__shiftRight),
 			self.__P,
 			self.__nrBits,
 			"right" if self.__shiftRight else "left",
