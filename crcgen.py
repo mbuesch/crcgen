@@ -104,7 +104,7 @@ class AbstractBit(object):
 	def flatten(self):
 		return self
 
-	def optimize(self):
+	def optimize(self, sortLex):
 		pass
 
 @dataclass
@@ -121,6 +121,9 @@ class Bit(AbstractBit):
 	def gen_verilog(self):
 		return "%s[%d]" % (self.name, self.index)
 
+	def sortKey(self):
+		return "%s_%07d" % (self.name, self.index)
+
 @dataclass
 class ConstBit(AbstractBit):
 	value: int
@@ -133,6 +136,9 @@ class ConstBit(AbstractBit):
 
 	def gen_verilog(self):
 		return "1'b1" if self.value else "1'b0"
+
+	def sortKey(self):
+		return "1" if self.value else "0"
 
 class XOR(object):
 	def __init__(self, *items):
@@ -148,7 +154,7 @@ class XOR(object):
 		self.items = newItems
 		return self
 
-	def optimize(self):
+	def optimize(self, sortLex):
 		newItems = []
 		for item in self.items:
 			if isinstance(item, ConstBit):
@@ -178,6 +184,9 @@ class XOR(object):
 				# This is something else.
 				# Keep it.
 				newItems.append(item)
+		if sortLex:
+			# XOR can be arranged in any order.
+			newItems.sort(key=lambda item: item.sortKey())
 		if not newItems:
 			# All items have been optimized out.
 			# This term shall be zero.
@@ -209,9 +218,9 @@ class Word(object):
 	def flatten(self):
 		self.items = [ item.flatten() for item in self.items ]
 
-	def optimize(self):
+	def optimize(self, sortLex):
 		for item in self.items:
-			item.optimize()
+			item.optimize(sortLex)
 
 class CrcGenError(Exception):
 	pass
@@ -220,11 +229,12 @@ class CrcGen(object):
 	"""Combinatorial CRC algorithm generator.
 	"""
 
-	OPT_FLATTEN	= 1 << 0
-	OPT_ELIMINATE	= 1 << 1
+	OPT_FLATTEN	= 1 << 0 # Flatten the bit operation tree
+	OPT_ELIMINATE	= 1 << 1 # Eliminate redundant operations
+	OPT_LEX		= 1 << 2 # Sort the operands in lexicographical order where possible
 
 	OPT_NONE	= 0
-	OPT_ALL		= OPT_FLATTEN | OPT_ELIMINATE
+	OPT_ALL		= OPT_FLATTEN | OPT_ELIMINATE | OPT_LEX
 
 	def __init__(self,
 		     P,
@@ -309,7 +319,7 @@ class CrcGen(object):
 		if self.__optimize & self.OPT_FLATTEN:
 			outCrc.flatten()
 		if self.__optimize & self.OPT_ELIMINATE:
-			outCrc.optimize()
+			outCrc.optimize(sortLex=bool(self.__optimize & self.OPT_LEX))
 
 		return outCrc
 
