@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # vim: ts=8 sw=8 noexpandtab
 #
 #   CRC code generator
@@ -20,94 +19,17 @@
 #   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from crcgen.util import *
+from crcgen.reference import *
 from dataclasses import dataclass
 import re
 
-
 __all__ = [
-	"CRC_PARAMETERS",
 	"CrcGen",
+	"CrcGenError",
 	"int2poly",
 	"poly2int",
 ]
-
-
-CRC_PARAMETERS = {
-	"CRC-64-ECMA" : {
-		"polynomial"	: 0xC96C5795D7870F42,
-		"nrBits"	: 64,
-		"shiftRight"	: True,
-	},
-	"CRC-64-ISO" : {
-		"polynomial"	: 0xD800000000000000,
-		"nrBits"	: 64,
-		"shiftRight"	: True,
-	},
-	"CRC-32" : {
-		"polynomial"	: 0xEDB88320,
-		"nrBits"	: 32,
-		"shiftRight"	: True,
-	},
-	"CRC-16" : {
-		"polynomial"	: 0xA001,
-		"nrBits"	: 16,
-		"shiftRight"	: True,
-	},
-	"CRC-16-CCITT" : {
-		"polynomial"	: 0x1021,
-		"nrBits"	: 16,
-		"shiftRight"	: False,
-	},
-	"CRC-8-CCITT" : {
-		"polynomial"	: 0x07,
-		"nrBits"	: 8,
-		"shiftRight"	: False,
-	},
-	"CRC-8-IBUTTON" : {
-		"polynomial"	: 0x8C,
-		"nrBits"	: 8,
-		"shiftRight"	: True,
-	},
-}
-
-
-class CrcReference(object):
-	"""Generic CRC reference implementation.
-	"""
-
-	@classmethod
-	def crc(cls, crc, data, polynomial, nrBits, shiftRight):
-		mask = (1 << nrBits) - 1
-		msb = 1 << (nrBits - 1)
-		lsb = 1
-		if shiftRight:
-			tmp = (crc ^ data) & 0xFF
-			for i in range(8):
-				if tmp & lsb:
-					tmp = ((tmp >> 1) ^ polynomial) & mask
-				else:
-					tmp = (tmp >> 1) & mask
-			crc = ((crc >> 8) ^ tmp) & mask
-		else:
-			tmp = (crc ^ (data << (nrBits - 8))) & mask
-			for i in range(8):
-				if tmp & msb:
-					tmp = ((tmp << 1) ^ polynomial) & mask
-				else:
-					tmp = (tmp << 1) & mask
-			crc = tmp
-		return crc
-
-	@classmethod
-	def crcBlock(cls, crc, data, polynomial, nrBits, shiftRight, preFlip, postFlip):
-		mask = (1 << nrBits) - 1
-		if preFlip:
-			crc ^= mask
-		for b in data:
-			crc = cls.crc(crc, b, polynomial, nrBits, shiftRight)
-		if postFlip:
-			crc ^= mask
-		return crc
 
 @dataclass
 class AbstractBit(object):
@@ -565,13 +487,6 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 			if tmpdir:
 				shutil.rmtree(tmpdir, ignore_errors=True)
 
-def bitreverse(value, nrBits):
-	ret = 0
-	for _ in range(nrBits):
-		ret = (ret << 1) | (value & 1)
-		value >>= 1
-	return ret
-
 def poly2int(polyString, nrBits, shiftRight=False):
 	"""Convert polynomial coefficient string to binary integer.
 	"""
@@ -613,118 +528,3 @@ def int2poly(poly, nrBits, shiftRight=False):
 		poly >>= 1
 	p.append("x^%d" % nrBits)
 	return " + ".join(reversed(p))
-
-if __name__ == "__main__":
-	import sys, argparse
-	try:
-		def argInt(string):
-			if string.startswith("0x"):
-				return int(string[2:], 16)
-			return int(string)
-		p = argparse.ArgumentParser()
-		g = p.add_mutually_exclusive_group(required=True)
-		g.add_argument("-p", "--python", action="store_true", help="Generate Python code")
-		g.add_argument("-v", "--verilog-function", action="store_true", help="Generate Verilog function")
-		g.add_argument("-m", "--verilog-module", action="store_true", help="Generate Verilog module")
-		g.add_argument("-c", "--c", action="store_true", help="Generate C code")
-		g.add_argument("-t", "--test", action="store_true", help="Run unit tests for the specified algorithm")
-		g.add_argument("-T", "--polynomial-convert", type=str, help="Convert a polynomial from string to int or vice versa.")
-		p.add_argument("-a", "--algorithm", type=str,
-			       choices=CRC_PARAMETERS.keys(), default="CRC-8-CCITT",
-			       help="Select the CRC algorithm. "
-				    "Individual algorithm parameters (e.g. polynomial) can be overridden with the options below.")
-		p.add_argument("-P", "--polynomial", type=str, help="CRC polynomial")
-		p.add_argument("-B", "--nr-bits", type=argInt, help="Number of bits (8-64)")
-		g = p.add_mutually_exclusive_group()
-		g.add_argument("-R", "--shift-right", action="store_true", help="CRC algorithm shift direction: right shift")
-		g.add_argument("-L", "--shift-left", action="store_true", help="CRC algorithm shift direction: left shift")
-		p.add_argument("-n", "--name", type=str, default="crc", help="Generated function/module name")
-		p.add_argument("-D", "--data-param", type=str, default="data", help="Generated function/module data parameter name")
-		p.add_argument("-C", "--crc-in-param", type=str, default="crcIn", help="Generated function/module crc input parameter name")
-		p.add_argument("-o", "--crc-out-param", type=str, default="crcOut", help="Generated module crc output parameter name")
-		p.add_argument("-S", "--static", action="store_true", help="Generate static C function")
-		p.add_argument("-I", "--inline", action="store_true", help="Generate inline C function")
-		p.add_argument("-O", "--optimize", type=argInt, default=CrcGen.OPT_ALL, help="Enable algorithm optimizer steps")
-		args = p.parse_args()
-
-		if (args.nr_bits is not None and
-		    (args.nr_bits < 8 or args.nr_bits > 64)):
-			raise CrcGenError("Invalid -B|--nr-bits argument. Valid range is 8-64.")
-
-		if args.polynomial_convert is not None:
-			if args.nr_bits is None:
-				raise CrcGenError("-B|--nr-bits is required for -T|--polynomial-convert")
-			try:
-				if "^" in args.polynomial_convert.lower():
-					print("0x%X" % poly2int(args.polynomial_convert,
-								args.nr_bits,
-								args.shift_right))
-				else:
-					print(int2poly(int(args.polynomial_convert, 0),
-						       args.nr_bits,
-						       args.shift_right))
-			except ValueError as e:
-				raise CrcGenError("-T|--polynomial-convert error: " + str(e))
-			sys.exit(0)
-
-		crcParameters = CRC_PARAMETERS[args.algorithm].copy()
-		if args.nr_bits is not None:
-			crcParameters["nrBits"] = args.nr_bits
-		if args.shift_right:
-			crcParameters["shiftRight"] = True
-		if args.shift_left:
-			crcParameters["shiftRight"] = False
-		if args.polynomial is not None:
-			try:
-				if "^" in args.polynomial:
-					polynomial = poly2int(args.polynomial,
-							      crcParameters["nrBits"],
-							      crcParameters["shiftRight"])
-				else:
-					polynomial = argInt(args.polynomial)
-			except ValueError as e:
-				raise CrcGenError("Polynomial error: " + str(e))
-			crcParameters["polynomial"] = polynomial
-
-		polynomial = crcParameters["polynomial"]
-		nrBits = crcParameters["nrBits"]
-		shiftRight = crcParameters["shiftRight"]
-
-		if polynomial > ((1 << nrBits) - 1):
-			raise CrcGenError("Invalid polynomial. "
-					  "It is bigger than the CRC width "
-					  "of (2**%d)-1." % nrBits)
-
-		gen = CrcGen(P=polynomial,
-			     nrBits=nrBits,
-			     shiftRight=shiftRight,
-			     optimize=args.optimize)
-		if args.test:
-			gen.runTests()
-		else:
-			if args.python:
-				print(gen.genPython(funcName=args.name,
-						    crcVarName=args.crc_in_param,
-						    dataVarName=args.data_param))
-			elif args.verilog_function:
-				print(gen.genVerilog(genFunction=True,
-						     name=args.name,
-						     inDataName=args.data_param,
-						     inCrcName=args.crc_in_param,
-						     outCrcName=args.crc_out_param))
-			elif args.verilog_module:
-				print(gen.genVerilog(genFunction=False,
-						     name=args.name,
-						     inDataName=args.data_param,
-						     inCrcName=args.crc_in_param,
-						     outCrcName=args.crc_out_param))
-			elif args.c:
-				print(gen.genC(funcName=args.name,
-					       crcVarName=args.crc_in_param,
-					       dataVarName=args.data_param,
-					       static=args.static,
-					       inline=args.inline))
-		sys.exit(0)
-	except CrcGenError as e:
-		print("ERROR: %s" % str(e), file=sys.stderr)
-		sys.exit(1)

@@ -43,7 +43,8 @@
 #
 
 from crcgen import *
-from crcgen import CrcReference, bitreverse
+from crcgen.reference import *
+from crcgen.util import *
 import random
 import multiprocessing
 
