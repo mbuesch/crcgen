@@ -42,7 +42,8 @@
 #  POSSIBILITY OF SUCH DAMAGE.
 #
 
-from crcgen import CrcReference, CrcGen, CRC_PARAMETERS
+from crcgen import *
+from crcgen import CrcReference, bitreverse
 import random
 import multiprocessing
 
@@ -161,13 +162,6 @@ def dataRange():
 		    0x3E, 0x92, 0x0A, 0x7D, 0x4E, 0x07, 0x23, 0xDD,
 		    0x4C, 0xE4, 0x1E, 0x8B, 0x5C, 0xD8, 0x1F, 0x74)
 
-def bitreverse(value, nrBits):
-	ret = 0
-	for _ in range(nrBits):
-		ret = (ret << 1) | (value & 1)
-		value >>= 1
-	return ret
-
 def compareReferenceImpl(name, crcFunc):
 	print("Testing %s..." % name)
 	crcParameters = CRC_PARAMETERS[name]
@@ -216,6 +210,36 @@ if __name__ == "__main__":
 	assert bitreverse(0xE0, 8) == 0x07
 	assert bitreverse(0x8408, 16) == 0x1021
 	assert bitreverse(0xEDB88320, 32) == 0x04C11DB7
+
+	print("*** Testing polynomial coefficient conversion ***")
+	for poly, polyString, nrBits, shiftRight in (
+			(0xEDB88320,
+			 "x^32 + x^26 + x^23 + x^22 + x^16 + x^12 + x^11 + "
+			 "x^10 + x^8 + x^7 + x^5 + x^4 + x^2 + x + 1",
+			 32, True),
+			(0xa001,
+			 "x^16 + x^15 + x^2 + 1",
+			 16, True),
+			(0x1021,
+			 "x^16 + x^12 + x^5 + 1",
+			 16, False),
+			(0x8408,
+			 "x^16 + x^12 + x^5 + 1",
+			 16, True),
+			(0x8C,
+			 "x^8 + x^5 + x^4 + 1",
+			 8, True),
+			(0xE0,
+			 "x^8 + x^2 + x + 1",
+			 8, True),
+			(0x07,
+			 "x^8 + x^2 + x + 1",
+			 8, False),
+		):
+		if poly2int(polyString, nrBits, shiftRight) != poly:
+			raise Exception("Polynomial '%s' != 0x%X" % (polyString, poly))
+		if int2poly(poly, nrBits, shiftRight) != polyString:
+			raise Exception("Polynomial 0x%X != '%s'" % (poly, polyString))
 
 	print("*** Comparing reference implementation to itself reversed ***")
 	params = (

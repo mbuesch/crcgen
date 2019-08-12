@@ -21,11 +21,14 @@
 #
 
 from dataclasses import dataclass
+import re
 
 
 __all__ = [
 	"CRC_PARAMETERS",
 	"CrcGen",
+	"int2poly",
+	"poly2int",
 ]
 
 
@@ -531,6 +534,55 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 			if tmpdir:
 				shutil.rmtree(tmpdir, ignore_errors=True)
 
+def bitreverse(value, nrBits):
+	ret = 0
+	for _ in range(nrBits):
+		ret = (ret << 1) | (value & 1)
+		value >>= 1
+	return ret
+
+def poly2int(polyString, nrBits, shiftRight=False):
+	"""Convert polynomial coefficient string to binary integer.
+	"""
+	polyString, _ = re.subn(r"\s+", "", polyString)
+	poly = 0
+	try:
+		for bit in polyString.split("+"):
+			bit = bit.lower()
+			if bit.startswith("x^"):
+				poly |= 1 << int(bit[2:])
+			elif bit == "x":
+				poly |= 1 << 1
+			else:
+				poly |= int(bit)
+	except ValueError:
+		raise ValueError("Invalid polynomial coefficient format.")
+	poly &= (1 << nrBits) - 1
+	if shiftRight:
+		poly = bitreverse(poly, nrBits)
+	return poly
+
+def int2poly(poly, nrBits, shiftRight=False):
+	"""Convert binary integer polynomial coefficient to string.
+	"""
+	poly &= (1 << nrBits) - 1
+	if shiftRight:
+		poly = bitreverse(poly, nrBits)
+	p = []
+	shift = 0
+	while poly:
+		if poly & 1:
+			if shift == 0:
+				p.append("1")
+			elif shift == 1:
+				p.append("x")
+			else:
+				p.append("x^%d" % shift)
+		shift += 1
+		poly >>= 1
+	p.append("x^%d" % nrBits)
+	return " + ".join(reversed(p))
+
 if __name__ == "__main__":
 	import sys, argparse
 	try:
@@ -545,6 +597,7 @@ if __name__ == "__main__":
 		g.add_argument("-m", "--verilog-module", action="store_true", help="Generate Verilog module")
 		g.add_argument("-c", "--c", action="store_true", help="Generate C code")
 		g.add_argument("-t", "--test", action="store_true", help="Run unit tests for the specified algorithm")
+		g.add_argument("-T", "--polynomial-convert", type=str, help="Convert a polynomial from string to int or vice versa.")
 		p.add_argument("-a", "--algorithm", type=str,
 			       choices=CRC_PARAMETERS.keys(), default="CRC-8-CCITT",
 			       help="Select the CRC algorithm. "
@@ -562,6 +615,22 @@ if __name__ == "__main__":
 		p.add_argument("-I", "--inline", action="store_true", help="Generate inline C function")
 		p.add_argument("-O", "--optimize", type=argInt, default=CrcGen.OPT_ALL, help="Enable algorithm optimizer steps")
 		args = p.parse_args()
+
+		if args.polynomial_convert is not None:
+			if args.nr_bits is None:
+				raise CrcGenError("-B|--nr-bits is required for -T|--polynomial-convert")
+			try:
+				if "^" in args.polynomial_convert.lower():
+					print("0x%X" % poly2int(args.polynomial_convert,
+								args.nr_bits,
+								args.shift_right))
+				else:
+					print(int2poly(int(args.polynomial_convert, 0),
+						       args.nr_bits,
+						       args.shift_right))
+			except ValueError as e:
+				raise CrcGenError("-T|--polynomial-convert error: " + str(e))
+			sys.exit(0)
 
 		crcParameters = CRC_PARAMETERS[args.algorithm].copy()
 		if args.polynomial is not None:
