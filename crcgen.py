@@ -602,7 +602,7 @@ if __name__ == "__main__":
 			       choices=CRC_PARAMETERS.keys(), default="CRC-8-CCITT",
 			       help="Select the CRC algorithm. "
 				    "Individual algorithm parameters (e.g. polynomial) can be overridden with the options below.")
-		p.add_argument("-P", "--polynomial", type=argInt, help="CRC polynomial")
+		p.add_argument("-P", "--polynomial", type=str, help="CRC polynomial")
 		p.add_argument("-B", "--nr-bits", type=argInt, choices=[8, 16, 32], help="Number of bits")
 		g = p.add_mutually_exclusive_group()
 		g.add_argument("-R", "--shift-right", action="store_true", help="CRC algorithm shift direction: right shift")
@@ -633,14 +633,23 @@ if __name__ == "__main__":
 			sys.exit(0)
 
 		crcParameters = CRC_PARAMETERS[args.algorithm].copy()
-		if args.polynomial is not None:
-			crcParameters["polynomial"] = args.polynomial
 		if args.nr_bits is not None:
 			crcParameters["nrBits"] = args.nr_bits
 		if args.shift_right:
 			crcParameters["shiftRight"] = True
 		if args.shift_left:
 			crcParameters["shiftRight"] = False
+		if args.polynomial is not None:
+			try:
+				if "^" in args.polynomial:
+					polynomial = poly2int(args.polynomial,
+							      crcParameters["nrBits"],
+							      crcParameters["shiftRight"])
+				else:
+					polynomial = argInt(args.polynomial)
+			except ValueError as e:
+				raise CrcGenError("Polynomial error: " + str(e))
+			crcParameters["polynomial"] = polynomial
 
 		polynomial = crcParameters["polynomial"]
 		nrBits = crcParameters["nrBits"]
