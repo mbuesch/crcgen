@@ -214,6 +214,12 @@ if __name__ == "__main__":
 
 	print("*** Testing polynomial coefficient conversion ***")
 	for poly, polyString, nrBits, shiftRight in (
+			(0xC96C5795D7870F42,
+			 "x^64 + x^62 + x^57 + x^55 + x^54 + x^53 + x^52 + x^47 + "
+			 "x^46 + x^45 + x^40 + x^39 + x^38 + x^37 + x^35 + x^33 + "
+			 "x^32 + x^31 + x^29 + x^27 + x^24 + x^23 + x^22 + x^21 + "
+			 "x^19 + x^17 + x^13 + x^12 + x^10 + x^9 + x^7 + x^4 + x + 1",
+			 64, True),
 			(0xEDB88320,
 			 "x^32 + x^26 + x^23 + x^22 + x^16 + x^12 + x^11 + "
 			 "x^10 + x^8 + x^7 + x^5 + x^4 + x^2 + x + 1",
