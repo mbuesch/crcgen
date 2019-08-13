@@ -42,7 +42,7 @@ def main():
 		g.add_argument("-t", "--test", action="store_true", help="Run unit tests for the specified algorithm")
 		g.add_argument("-T", "--polynomial-convert", type=str, help="Convert a polynomial from string to int or vice versa.")
 		p.add_argument("-a", "--algorithm", type=str,
-			       choices=CRC_PARAMETERS.keys(), default="CRC-8-CCITT",
+			       choices=CRC_PARAMETERS.keys(), default="CRC-32",
 			       help="Select the CRC algorithm. "
 				    "Individual algorithm parameters (e.g. polynomial) can be overridden with the options below.")
 		p.add_argument("-P", "--polynomial", type=str, help="CRC polynomial")
