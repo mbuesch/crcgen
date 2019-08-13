@@ -19,7 +19,12 @@ setup(	name		= "crcgen",
 	author		= "Michael Buesch",
 	author_email	= "m@bues.ch",
 	url		= "https://bues.ch/h/crcgen",
-	packages	= [ "crcgen" ],
+	scripts		= [
+		"scripts/crcgen",
+	],
+	packages	= [
+		"crcgen",
+	],
 	keywords	= "CRC Verilog FPGA codegenerator",
 	classifiers	= [
 		"Development Status :: 5 - Production/Stable",
