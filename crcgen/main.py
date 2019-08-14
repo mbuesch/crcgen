@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # vim: ts=8 sw=8 noexpandtab
 #
 #   CRC code generator
@@ -22,12 +21,14 @@
 
 from crcgen import *
 
+import sys
+import argparse
+
 __all__ = [
 	"main",
 ]
 
 def main():
-	import sys, argparse
 	try:
 		def argInt(string):
 			if string.startswith("0x"):
@@ -77,7 +78,7 @@ def main():
 						       args.shift_right))
 			except ValueError as e:
 				raise CrcGenError("-T|--polynomial-convert error: " + str(e))
-			sys.exit(0)
+			return 0
 
 		crcParameters = CRC_PARAMETERS[args.algorithm].copy()
 		if args.nr_bits is not None:
@@ -136,10 +137,7 @@ def main():
 					       dataVarName=args.data_param,
 					       static=args.static,
 					       inline=args.inline))
-		sys.exit(0)
+		return 0
 	except CrcGenError as e:
 		print("ERROR: %s" % str(e), file=sys.stderr)
-		sys.exit(1)
-
-if __name__ == "__main__":
-	main()
+	return 1

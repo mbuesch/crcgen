@@ -21,4 +21,5 @@
 
 if __name__ == "__main__":
 	from crcgen.main import main
-	main()
+	import sys
+	sys.exit(main())
