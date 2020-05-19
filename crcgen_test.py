@@ -2,7 +2,7 @@
 #
 #  Test of CRC generator.
 #
-#   Copyright (C) 2019 Michael Buesch <m@bues.ch>
+#   Copyright (C) 2020 Michael Buesch <m@bues.ch>
 #
 #  Some CRC implementations are derived from AVR-libc.
 #  These copyright notices apply to the AVR-libc parts:
@@ -274,10 +274,7 @@ if __name__ == "__main__":
 
 	print("*** Comparing generated CRC functions to reference implementation ***")
 	def makeParams():
-		for optimize in (CrcGen.OPT_ALL,
-				 CrcGen.OPT_FLATTEN,
-				 CrcGen.OPT_ELIMINATE,
-				 CrcGen.OPT_NONE):
+		for optimize in reversed(range(1 << CrcGen.OPT_ALL.bit_length())):
 			for alg, crcParameters in CRC_PARAMETERS.items():
 				yield optimize, alg, crcParameters
 	with multiprocessing.Pool() as p:

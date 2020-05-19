@@ -2,7 +2,7 @@
 #
 #   CRC code generator
 #
-#   Copyright (c) 2019 Michael Buesch <m@bues.ch>
+#   Copyright (c) 2020 Michael Buesch <m@bues.ch>
 #
 #   This program is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -136,6 +136,9 @@ class XOR(object):
 	def gen_verilog(self):
 		assert(self.items)
 		return "(%s)" % (" ^ ".join(item.gen_verilog() for item in self.items))
+
+	def sortKey(self):
+		return "__".join(item.sortKey() for item in self.items)
 
 class Word(object):
 	def __init__(self, *items, MSBFirst=True):
