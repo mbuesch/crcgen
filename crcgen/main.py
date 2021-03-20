@@ -57,7 +57,19 @@ def main():
 		p.add_argument("-o", "--crc-out-param", type=str, default="crcOut", help="Generated module crc output parameter name")
 		p.add_argument("-S", "--static", action="store_true", help="Generate static C function")
 		p.add_argument("-I", "--inline", action="store_true", help="Generate inline C function")
-		p.add_argument("-O", "--optimize", type=argInt, default=CrcGen.OPT_ALL, help="Enable algorithm optimizer steps")
+		p.add_argument("-O", "--optimize", type=argInt, default=CrcGen.OPT_ALL,
+			       help="Select individual algorithm optimizer steps. "
+				    "The argument to the -O option can be any sum of the following integers: "
+				    "-O%d (Flatten the bit operation tree), "
+				    "-O%d (Eliminate redundant operations), "
+				    "-O%d (Sort the operands in lexicographical order where possible). "
+				    "-O%d disables all optimizer steps. "
+				    "If this option is not given, then by default all optimizer steps are enabled (-O%d)." % (
+				    CrcGen.OPT_FLATTEN,
+				    CrcGen.OPT_ELIMINATE,
+				    CrcGen.OPT_LEX,
+				    CrcGen.OPT_NONE,
+				    CrcGen.OPT_ALL))
 		args = p.parse_args()
 
 		if (args.nr_bits is not None and
