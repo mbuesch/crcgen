@@ -2,7 +2,7 @@
 #
 #   CRC code generator
 #
-#   Copyright (c) 2019 Michael Buesch <m@bues.ch>
+#   Copyright (c) 2019-2021 Michael Buesch <m@bues.ch>
 #
 #   This program is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -47,7 +47,8 @@ def main():
 			       help="Select the CRC algorithm. "
 				    "Individual algorithm parameters (e.g. polynomial) can be overridden with the options below.")
 		p.add_argument("-P", "--polynomial", type=str, help="CRC polynomial")
-		p.add_argument("-B", "--nr-bits", type=argInt, help="Number of bits (8-64)")
+		p.add_argument("-B", "--nr-crc-bits", type=argInt, help="Number of CRC bits.")
+		p.add_argument("-b", "--nr-data-bits", type=argInt, default="8", help="Number of input data word bits.")
 		g = p.add_mutually_exclusive_group()
 		g.add_argument("-R", "--shift-right", action="store_true", help="CRC algorithm shift direction: right shift")
 		g.add_argument("-L", "--shift-left", action="store_true", help="CRC algorithm shift direction: left shift")
@@ -72,29 +73,31 @@ def main():
 				    CrcGen.OPT_ALL))
 		args = p.parse_args()
 
-		if (args.nr_bits is not None and
-		    (args.nr_bits < 8 or args.nr_bits > 64)):
-			raise CrcGenError("Invalid -B|--nr-bits argument. Valid range is 8-64.")
+		if (args.nr_crc_bits is not None and
+		    args.nr_crc_bits < 1):
+			raise CrcGenError("Invalid -B|--nr-crc-bits argument.")
+		if args.nr_data_bits < 1:
+			raise CrcGenError("Invalid -b|--nr-data-bits argument.")
 
 		if args.polynomial_convert is not None:
-			if args.nr_bits is None:
-				raise CrcGenError("-B|--nr-bits is required for -T|--polynomial-convert")
+			if args.nr_crc_bits is None:
+				raise CrcGenError("-B|--nr-crc-bits is required for -T|--polynomial-convert")
 			try:
 				if "^" in args.polynomial_convert.lower():
 					print("0x%X" % poly2int(args.polynomial_convert,
-								args.nr_bits,
+								args.nr_crc_bits,
 								args.shift_right))
 				else:
 					print(int2poly(int(args.polynomial_convert, 0),
-						       args.nr_bits,
+						       args.nr_crc_bits,
 						       args.shift_right))
 			except ValueError as e:
 				raise CrcGenError("-T|--polynomial-convert error: " + str(e))
 			return 0
 
 		crcParameters = CRC_PARAMETERS[args.algorithm].copy()
-		if args.nr_bits is not None:
-			crcParameters["nrBits"] = args.nr_bits
+		if args.nr_crc_bits is not None:
+			crcParameters["nrBits"] = args.nr_crc_bits
 		if args.shift_right:
 			crcParameters["shiftRight"] = True
 		if args.shift_left:
@@ -112,16 +115,17 @@ def main():
 			crcParameters["polynomial"] = polynomial
 
 		polynomial = crcParameters["polynomial"]
-		nrBits = crcParameters["nrBits"]
+		nrCrcBits = crcParameters["nrBits"]
 		shiftRight = crcParameters["shiftRight"]
 
-		if polynomial > ((1 << nrBits) - 1):
+		if polynomial > ((1 << nrCrcBits) - 1):
 			raise CrcGenError("Invalid polynomial. "
 					  "It is bigger than the CRC width "
-					  "of (2**%d)-1." % nrBits)
+					  "of (2**%d)-1." % nrCrcBits)
 
 		gen = CrcGen(P=polynomial,
-			     nrBits=nrBits,
+			     nrCrcBits=nrCrcBits,
+			     nrDataBits=args.nr_data_bits,
 			     shiftRight=shiftRight,
 			     optimize=args.optimize)
 		if args.test:

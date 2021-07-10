@@ -145,6 +145,16 @@ def crc8_ccitt(crc, data):
 			crc = (crc << 1) & 0xFF
 	return crc
 
+def crc6_itu(crc, data):
+	for i in range(8):
+		crc ^= (data & 0x80) >> 2
+		data <<= 1
+		if crc & 0x20:
+			crc = ((crc << 1) ^ 0x03) & 0x3F
+		else:
+			crc = (crc << 1) & 0x3F
+	return crc
+
 def crcRange(nrBits):
 	rng = random.Random()
 	rng.seed(42)
@@ -253,7 +263,8 @@ def checkReferenceNrDataBits(nrCrcBits, polynomial):
 
 def compareGeneratedImpl(optimize, alg, crcParameters):
 	gen = CrcGen(P=crcParameters["polynomial"],
-		     nrBits=crcParameters["nrBits"],
+		     nrCrcBits=crcParameters["nrBits"],
+		     nrDataBits=8,
 		     shiftRight=crcParameters["shiftRight"],
 		     optimize=optimize)
 	gen.runTests(name=alg, extra=("-O=%d" % optimize))
@@ -330,6 +341,7 @@ if __name__ == "__main__":
 		("CRC-16-CCITT", crc16_xmodem),
 		("CRC-8-CCITT", crc8_ccitt),
 		("CRC-8-IBUTTON", crc8_ibutton),
+		("CRC-6-ITU", crc6_itu),
 	)
 	with multiprocessing.Pool() as p:
 		p.starmap(compareReferenceImpl, params)

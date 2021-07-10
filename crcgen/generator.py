@@ -2,7 +2,7 @@
 #
 #   CRC code generator
 #
-#   Copyright (c) 2020 Michael Buesch <m@bues.ch>
+#   Copyright (c) 2020-2021 Michael Buesch <m@bues.ch>
 #
 #   This program is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -141,10 +141,8 @@ class XOR(object):
 		return "__".join(item.sortKey() for item in self.items)
 
 class Word(object):
-	def __init__(self, *items, MSBFirst=True):
-		if MSBFirst:
-			# Reverse items, so that it's always LSB-first.
-			items = reversed(items)
+	def __init__(self, *items):
+		# items must be LSB first.
 		self.items = list(items)
 
 	def __getitem__(self, index):
@@ -173,44 +171,33 @@ class CrcGen(object):
 
 	def __init__(self,
 		     P,
-		     nrBits,
+		     nrCrcBits,
+		     nrDataBits=8,
 		     shiftRight=False,
 		     optimize=OPT_ALL):
 		self.__P = P
-		self.__nrBits = nrBits
+		self.__nrCrcBits = nrCrcBits
+		self.__nrDataBits = nrDataBits
 		self.__shiftRight = shiftRight
 		self.__optimize = optimize
 
 	def __gen(self, dataVarName, crcVarName):
-		nrBits = self.__nrBits
-		if not 8 <= nrBits <= 64:
+		nrCrcBits = self.__nrCrcBits
+		nrDataBits = self.__nrDataBits
+		if nrCrcBits < 1 or nrDataBits < 1:
 			raise CrcGenError("Invalid number of bits.")
 
 		# Construct the function input data word.
 		inData = Word(*(
 			Bit(dataVarName, i)
-			for i in reversed(range(8))
+			for i in range(nrDataBits)
 		))
 
 		# Construct the function input CRC word.
 		inCrc  = Word(*(
 			Bit(crcVarName, i)
-			for i in reversed(range(nrBits))
+			for i in range(nrCrcBits)
 		))
-
-		# Construct the base word.
-		# This is the start word for the bit shifting loop below.
-		if self.__shiftRight:
-			base = Word(*(
-				XOR(inData[i], inCrc[i]) if i <= 7 else ConstBit(0)
-				for i in reversed(range(nrBits))
-			))
-		else:
-			base = Word(*(
-				XOR(inData[i - (nrBits - 8)] if i >= nrBits - 8 else ConstBit(0),
-				    inCrc[i])
-				for i in reversed(range(nrBits))
-			))
 
 		# Helper function to XOR a polynomial bit with the data bit 'dataBit',
 		# if the decision bit 'queryBit' is set.
@@ -220,36 +207,35 @@ class CrcGen(object):
 				return XOR(dataBit, queryBit)
 			return dataBit
 
-		# Run the main shift loop.
-		prevWord = base
-		for _ in range(8):
-			if self.__shiftRight:
-				# Shift to the right: i + 1
-				word = Word(*(
-					xor_P(prevWord[i + 1] if i < nrBits - 1 else ConstBit(0),
-					      prevWord[0],
-					      i)
-					for i in reversed(range(nrBits))
-				))
-			else:
-				# Shift to the left: i - 1
-				word = Word(*(
-					xor_P(prevWord[i - 1] if i > 0 else ConstBit(0),
-					      prevWord[nrBits - 1],
-					      i)
-					for i in reversed(range(nrBits))
-				))
-			prevWord = word
-
-		# Construct the function output CRC word.
+		# Run the shift register for each input data bit.
+		word = inCrc
 		if self.__shiftRight:
-			outCrc = Word(*(
-				XOR(inCrc[i + 8] if i < nrBits - 8 else ConstBit(0),
-				    word[i])
-				for i in reversed(range(nrBits))
-			))
+			for i in range(nrDataBits):
+				# Run the shift register once.
+				bits = []
+				for j in range(nrCrcBits):
+					# Shift to the right: j + 1
+					stateBit = word[j + 1] if j < nrCrcBits - 1 else ConstBit(0)
+					# XOR the input bit with LSB.
+					queryBit = XOR(word[0], inData[i])
+					# XOR the polynomial coefficient, if the query bit is set.
+					stateBit = xor_P(stateBit, queryBit, j)
+					bits.append(stateBit)
+				word = Word(*bits)
 		else:
-			outCrc = word
+			for i in reversed(range(nrDataBits)):
+				# Run the shift register once.
+				bits = []
+				for j in range(nrCrcBits):
+					# Shift to the left: j - 1
+					stateBit = word[j - 1] if j > 0 else ConstBit(0)
+					# XOR the input bit with MSB.
+					queryBit = XOR(word[nrCrcBits - 1], inData[i])
+					# XOR the polynomial coefficient, if the query bit is set.
+					stateBit = xor_P(stateBit, queryBit, j)
+					bits.append(stateBit)
+				word = Word(*bits)
+		outCrc = word
 
 		# Optimize the algorithm. This removes unnecessary operations.
 		if self.__optimize & self.OPT_FLATTEN:
@@ -280,9 +266,9 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 			"                             0x%X (hex)\n"
 			"CRC width:                   %d bits\n"
 			"CRC shift direction:         %s\n" % (
-			int2poly(self.__P, self.__nrBits, self.__shiftRight),
+			int2poly(self.__P, self.__nrCrcBits, self.__shiftRight),
 			self.__P,
-			self.__nrBits,
+			self.__nrCrcBits,
 			"right" if self.__shiftRight else "left",
 		))
 
@@ -336,17 +322,17 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 		ret.extend("// " + l for l in self.__algDescription().splitlines())
 		ret.append("")
 		if genFunction:
-			ret.append("function automatic [%d:0] %s;" % (self.__nrBits - 1, name))
+			ret.append("function automatic [%d:0] %s;" % (self.__nrCrcBits - 1, name))
 		else:
 			ret.append("module %s (" % name)
-		ret.append("\tinput [%d:0] %s%s" % (self.__nrBits - 1, inCrcName,
+		ret.append("\tinput [%d:0] %s%s" % (self.__nrCrcBits - 1, inCrcName,
 						    ";" if genFunction else ","))
-		ret.append("\tinput [7:0] %s%s" % (inDataName,
-						   ";" if genFunction else ","))
+		ret.append("\tinput [%d:0] %s%s" % (self.__nrDataBits - 1, inDataName,
+						    ";" if genFunction else ","))
 		if genFunction:
 			ret.append("begin")
 		else:
-			ret.append("\toutput [%d:0] %s," % (self.__nrBits - 1, outCrcName))
+			ret.append("\toutput [%d:0] %s," % (self.__nrCrcBits - 1, outCrcName))
 			ret.append(");")
 		for i, bit in enumerate(word):
 			ret.append("\t%s%s[%d] = %s;" % ("" if genFunction else "assign ",
@@ -371,15 +357,22 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 		 includeGuards=True,
 		 includes=True):
 		word = self.__gen(dataVarName, crcVarName)
-		if self.__nrBits <= 8:
-			cTypeBits = 8
-		elif self.__nrBits <= 16:
-			cTypeBits = 16
-		elif self.__nrBits <= 32:
-			cTypeBits = 32
-		else:
-			cTypeBits = 64
-		cType = "uint%s_t" % cTypeBits
+		def makeCType(nrBits, name):
+			if nrBits <= 8:
+				cBits = 8
+			elif nrBits <= 16:
+				cBits = 16
+			elif nrBits <= 32:
+				cBits = 32
+			elif nrBits <= 64:
+				cBits = 64
+			else:
+				raise CrcGenError("C code generator: " + name + " sizes "
+						  "bigger than 64 bit "
+						  "are not supported.")
+			return "uint%s_t" % cBits
+		cCrcType = makeCType(self.__nrCrcBits, "CRC")
+		cDataType = makeCType(self.__nrDataBits, "Input data")
 		ret = []
 		ret.append("// vim: ts=4 sw=4 noexpandtab")
 		ret.append("")
@@ -400,12 +393,13 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 			ret.append("#endif")
 			ret.append("#define b(x, b) (((x) >> (b)) & 1u)")
 			ret.append("")
-		ret.append("{extern}{static}{inline}{cType} "
-			   "{func}({cType} {crcVar}, uint8_t {dataVar}){end}".format(
+		ret.append("{extern}{static}{inline}{cCrcType} "
+			   "{func}({cCrcType} {crcVar}, {cDataType} {dataVar}){end}".format(
 			   extern="extern " if declOnly else "",
 			   static="static " if static and not declOnly else "",
 			   inline="inline " if inline and not declOnly else "",
-			   cType=cType,
+			   cCrcType=cCrcType,
+			   cDataType=cDataType,
 			   func=funcName,
 			   crcVar=crcVarName,
 			   dataVar=dataVarName,
@@ -413,13 +407,13 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 		))
 		if not declOnly:
 			ret.append("{")
-			ret.append("\t%s ret;" % cType)
+			ret.append("\t%s ret;" % cCrcType)
 			for i, bit in enumerate(word):
 				if i:
 					operator = "|="
 				else:
 					operator = " ="
-				ret.append("\tret %s (%s)%s << %d;" % (operator, cType, bit.gen_c(), i))
+				ret.append("\tret %s (%s)%s << %d;" % (operator, cCrcType, bit.gen_c(), i))
 			ret.append("\treturn ret;")
 			ret.append("}")
 			ret.append("#undef b")
@@ -435,10 +429,10 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 			rng = random.Random()
 			rng.seed(424242)
 
-			print("Testing%s P=0x%X, nrBits=%d, shiftRight=%d %s..." % (
+			print("Testing%s P=0x%X, nrCrcBits=%d, shiftRight=%d %s..." % (
 			      (" " + name) if name else "",
 			      self.__P,
-			      self.__nrBits,
+			      self.__nrCrcBits,
 			      int(bool(self.__shiftRight)),
 			      (extra + " ") if extra else ""))
 
@@ -462,7 +456,7 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 			crc_cimpl = testmod_crcgen.lib.crc
 
 			# Compare the reference implementation to the Python and C code.
-			mask = (1 << self.__nrBits) - 1
+			mask = (1 << self.__nrCrcBits) - 1
 			for i in range(0xFF + 1):
 				if i == 0:
 					crc = 0
@@ -475,15 +469,15 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 						crc=crc,
 						data=data,
 						polynomial=self.__P,
-						nrCrcBits=self.__nrBits,
+						nrCrcBits=self.__nrCrcBits,
 						shiftRight=self.__shiftRight)
 					py = crc_pyimpl(crc, data)
 					c = crc_cimpl(crc, data)
 					if ref != py or ref != c:
 						raise CrcGenError("Test failed. "
-							"(P=0x%X, nrBits=%d, shiftRight=%d, "
+							"(P=0x%X, nrCrcBits=%d, shiftRight=%d, "
 							"ref=0x%X, py=0x%X, c=0x%X)" % (
-							self.__P, self.__nrBits,
+							self.__P, self.__nrCrcBits,
 							int(bool(self.__shiftRight)),
 							ref, py, c))
 		finally:

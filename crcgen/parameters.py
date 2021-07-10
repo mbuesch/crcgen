@@ -59,4 +59,9 @@ CRC_PARAMETERS = {
 		"nrBits"	: 8,
 		"shiftRight"	: True,
 	},
+	"CRC-6-ITU" : {
+		"polynomial"	: 0x03,
+		"nrBits"	: 6,
+		"shiftRight"	: False,
+	},
 }
