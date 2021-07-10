@@ -2,7 +2,7 @@
 #
 #  Test of CRC generator.
 #
-#   Copyright (C) 2020 Michael Buesch <m@bues.ch>
+#   Copyright (C) 2020-2021 Michael Buesch <m@bues.ch>
 #
 #  Some CRC implementations are derived from AVR-libc.
 #  These copyright notices apply to the AVR-libc parts:
@@ -168,37 +168,88 @@ def compareReferenceImpl(name, crcFunc):
 	crcParameters = CRC_PARAMETERS[name]
 	for crc in crcRange(crcParameters["nrBits"]):
 		for data in dataRange():
-			a = crcFunc(crc, data)
-			b = CrcReference.crc(crc, data,
-					     crcParameters["polynomial"],
-					     crcParameters["nrBits"],
-					     crcParameters["shiftRight"])
-			if a != b:
-				raise Exception("%s test FAILED!" % name)
+			for i in range(5): # Run a couple of iterations.
+				a = crcFunc(crc, data)
+				b = CrcReference.crc(crc=crc,
+						     data=data,
+						     polynomial=crcParameters["polynomial"],
+						     nrCrcBits=crcParameters["nrBits"],
+						     shiftRight=crcParameters["shiftRight"])
+				if a != b:
+					raise Exception("%s test FAILED!" % name)
+				crc = a
+				data = (data + 1) & 0xFF
 
-def checkReferenceReversed(nrBits, polynomial):
-	print("Testing CrcReference reversed (nrBits=%d, P=%X)..." % (
-	      nrBits, polynomial))
+def checkReferenceReversed(nrCrcBits, polynomial):
+	print(f"Testing CrcReference reversed ({nrCrcBits=}, P={polynomial:X})...")
 	for shiftRight in (True, False):
-		for crc in crcRange(nrBits):
+		for crc in crcRange(nrCrcBits):
 			for data in dataRange():
 				a = CrcReference.crc(
-						crc,
-						data,
-						polynomial,
-						nrBits,
-						shiftRight)
+						crc=crc,
+						data=data,
+						polynomial=polynomial,
+						nrCrcBits=nrCrcBits,
+						shiftRight=shiftRight)
 				b = bitreverse(CrcReference.crc(
-						bitreverse(crc, nrBits),
-						bitreverse(data, 8),
-						bitreverse(polynomial, nrBits),
-						nrBits,
-						not shiftRight),
-					nrBits)
+						crc=bitreverse(crc, nrCrcBits),
+						data=bitreverse(data, 8),
+						polynomial=bitreverse(polynomial, nrCrcBits),
+						nrCrcBits=nrCrcBits,
+						shiftRight=not shiftRight),
+					nrCrcBits)
 			if a != b:
 				raise Exception("CrcReference reversed test "
-						"FAILED! (nrBits=%d, P=%X)" % (
-						nrBits, polynomial))
+						"FAILED! (nrCrcBits=%d, P=%X)" % (
+						nrCrcBits, polynomial))
+
+def checkReferenceNrDataBits(nrCrcBits, polynomial):
+	print(f"Testing CrcReference with different data word length "
+	      f"({nrCrcBits=}, P={polynomial:X})...")
+	data = bytes(dataRange())
+	for littleEndian in (False, True):
+		refCrc = CrcReference.crcBlock(crc=0,
+					       data=data,
+					       polynomial=polynomial,
+					       nrCrcBits=nrCrcBits,
+					       nrDataBits=8,
+					       shiftRight=littleEndian)
+
+		crc_data16 = 0
+		for i in range(0, len(data), 2):
+			if littleEndian:
+				word = data[i] | (data[i + 1] << 8)
+			else:
+				word = data[i + 1] | (data[i] << 8)
+			crc_data16 = CrcReference.crc(
+					crc=crc_data16,
+					data=word,
+					polynomial=polynomial,
+					nrCrcBits=nrCrcBits,
+					nrDataBits=16,
+					shiftRight=littleEndian)
+		if refCrc != crc_data16:
+			raise Exception(f"CrcRefernce 16 bit word test FAILED! "
+					f"({nrCrcBits=}, P={polynomial:X})")
+
+		crc_data32 = 0
+		for i in range(0, len(data), 4):
+			if littleEndian:
+				word = (data[i] | (data[i + 1] << 8) |
+					(data[i + 2] << 16) | (data[i + 3] << 24))
+			else:
+				word = (data[i + 3] | (data[i + 2] << 8) |
+					(data[i + 1] << 16) | (data[i] << 24))
+			crc_data32 = CrcReference.crc(
+					crc=crc_data32,
+					data=word,
+					polynomial=polynomial,
+					nrCrcBits=nrCrcBits,
+					nrDataBits=32,
+					shiftRight=littleEndian)
+		if refCrc != crc_data32:
+			raise Exception(f"CrcRefernce 32 bit word test FAILED! "
+					f"({nrCrcBits=}, P={polynomial:X})")
 
 def compareGeneratedImpl(optimize, alg, crcParameters):
 	gen = CrcGen(P=crcParameters["polynomial"],
@@ -259,6 +310,17 @@ if __name__ == "__main__":
 	)
 	with multiprocessing.Pool() as p:
 		p.starmap(checkReferenceReversed, params)
+
+	print("*** Comparing reference implementation to itself with different data word length ***")
+	params = (
+		(32, 0xEDB88320),
+		(16, 0xA001),
+		(16, 0x1021),
+		(8, 0x07),
+		(8, 0x8C),
+	)
+	with multiprocessing.Pool() as p:
+		p.starmap(checkReferenceNrDataBits, params)
 
 	print("*** Comparing reference implementation to discrete implementations ***")
 	params = (

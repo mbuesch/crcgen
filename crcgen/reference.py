@@ -3,7 +3,7 @@
 #
 #   CRC code generator
 #
-#   Copyright (c) 2019 Michael Buesch <m@bues.ch>
+#   Copyright (c) 2019-2021 Michael Buesch <m@bues.ch>
 #
 #   This program is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -24,40 +24,63 @@ __all__ = [
 	"CrcReference",
 ]
 
+from typing import Iterable
+
 class CrcReference(object):
 	"""Generic CRC reference implementation.
 	"""
 
 	@classmethod
-	def crc(cls, crc, data, polynomial, nrBits, shiftRight):
-		mask = (1 << nrBits) - 1
-		msb = 1 << (nrBits - 1)
+	def crc(cls,
+		crc: int,
+		data: int,
+		polynomial: int,
+		nrCrcBits: int,
+		nrDataBits: int = 8,
+		shiftRight: bool = False):
+
+		crcMask = (1 << nrCrcBits) - 1
+		msb = 1 << (nrCrcBits - 1)
 		lsb = 1
 		if shiftRight:
-			tmp = (crc ^ data) & 0xFF
-			for i in range(8):
-				if tmp & lsb:
-					tmp = ((tmp >> 1) ^ polynomial) & mask
+			for i in range(nrDataBits):
+				crc ^= data & 1
+				data >>= 1
+				if crc & lsb:
+					crc = ((crc >> 1) ^ polynomial) & crcMask
 				else:
-					tmp = (tmp >> 1) & mask
-			crc = ((crc >> 8) ^ tmp) & mask
+					crc = (crc >> 1) & crcMask
 		else:
-			tmp = (crc ^ (data << (nrBits - 8))) & mask
-			for i in range(8):
-				if tmp & msb:
-					tmp = ((tmp << 1) ^ polynomial) & mask
+			for i in range(nrDataBits):
+				crc ^= ((data >> (nrDataBits - 1)) & 1) << (nrCrcBits - 1)
+				data <<= 1
+				if crc & msb:
+					crc = ((crc << 1) ^ polynomial) & crcMask
 				else:
-					tmp = (tmp << 1) & mask
-			crc = tmp
+					crc = (crc << 1) & crcMask
 		return crc
 
 	@classmethod
-	def crcBlock(cls, crc, data, polynomial, nrBits, shiftRight, preFlip, postFlip):
-		mask = (1 << nrBits) - 1
+	def crcBlock(cls,
+		     crc: int,
+		     data: Iterable,
+		     polynomial: int,
+		     nrCrcBits: int,
+		     nrDataBits: int = 8,
+		     shiftRight: bool = False,
+		     preFlip: bool  = False,
+		     postFlip: bool = False):
+
+		crcMask = (1 << nrCrcBits) - 1
 		if preFlip:
-			crc ^= mask
+			crc ^= crcMask
 		for b in data:
-			crc = cls.crc(crc, b, polynomial, nrBits, shiftRight)
+			crc = cls.crc(crc=crc,
+				      data=b,
+				      polynomial=polynomial,
+				      nrCrcBits=nrCrcBits,
+				      nrDataBits=nrDataBits,
+				      shiftRight=shiftRight)
 		if postFlip:
-			crc ^= mask
+			crc ^= crcMask
 		return crc

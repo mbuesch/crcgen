@@ -475,7 +475,7 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 						crc=crc,
 						data=data,
 						polynomial=self.__P,
-						nrBits=self.__nrBits,
+						nrCrcBits=self.__nrBits,
 						shiftRight=self.__shiftRight)
 					py = crc_pyimpl(crc, data)
 					c = crc_cimpl(crc, data)
