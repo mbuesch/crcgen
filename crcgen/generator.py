@@ -255,11 +255,13 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 		return ("CRC polynomial coefficients: %s\n"
 			"                             0x%X (hex)\n"
 			"CRC width:                   %d bits\n"
-			"CRC shift direction:         %s\n" % (
+			"CRC shift direction:         %s\n"
+			"Input word width:            %d bits\n" % (
 			int2poly(self.__P, self.__nrCrcBits, self.__shiftRight),
 			self.__P,
 			self.__nrCrcBits,
-			"right" if self.__shiftRight else "left",
+			"right (little endian)" if self.__shiftRight else "left (big endian)",
+			self.__nrDataBits,
 		))
 
 	def genPython(self,
