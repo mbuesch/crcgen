@@ -421,12 +421,12 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 			rng = random.Random()
 			rng.seed(424242)
 
-			print("Testing%s P=0x%X, nrCrcBits=%d, shiftRight=%d %s..." % (
-			      (" " + name) if name else "",
-			      self.__P,
-			      self.__nrCrcBits,
-			      int(bool(self.__shiftRight)),
-			      (extra + " ") if extra else ""))
+			print(f"Testing{(' ' + name) if name else ''} "
+			      f"P=0x{self.__P:X}, "
+			      f"nrCrcBits={self.__nrCrcBits}, "
+			      f"shiftRight={int(bool(self.__shiftRight))}, "
+			      f"nrDataBits={self.__nrDataBits}"
+			      f"{(', ' + extra) if extra else ''} ...")
 
 			# Generate the CRC function as Python code.
 			pyCode = self.genPython(funcName="crc_pyimpl")
@@ -448,30 +448,45 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 			crc_cimpl = testmod_crcgen.lib.crc
 
 			# Compare the reference implementation to the Python and C code.
-			mask = (1 << self.__nrCrcBits) - 1
-			for i in range(0xFF + 1):
+			crcMask = (1 << self.__nrCrcBits) - 1
+			dataMask = (1 << self.__nrDataBits) - 1
+			for i in range(32):
 				if i == 0:
 					crc = 0
 				elif i == 1:
-					crc = mask
+					crc = crcMask
 				else:
-					crc = rng.randint(1, mask - 1)
-				for data in range(0xFF + 1):
-					ref = CrcReference.crc(
-						crc=crc,
-						data=data,
-						polynomial=self.__P,
-						nrCrcBits=self.__nrCrcBits,
-						shiftRight=self.__shiftRight)
-					py = crc_pyimpl(crc, data)
-					c = crc_cimpl(crc, data)
-					if ref != py or ref != c:
-						raise CrcGenError("Test failed. "
-							"(P=0x%X, nrCrcBits=%d, shiftRight=%d, "
-							"ref=0x%X, py=0x%X, c=0x%X)" % (
-							self.__P, self.__nrCrcBits,
-							int(bool(self.__shiftRight)),
-							ref, py, c))
+					crc = rng.randint(1, crcMask - 1)
+				for j in range(min(64, dataMask + 1)):
+					if j == 0:
+						data = 0
+					elif j == 1:
+						data = dataMask
+					else:
+						data = rng.randint(1, dataMask - 1)
+					for k in range(3):
+						ref = CrcReference.crc(
+							crc=crc,
+							data=data,
+							polynomial=self.__P,
+							nrCrcBits=self.__nrCrcBits,
+							nrDataBits=self.__nrDataBits,
+							shiftRight=self.__shiftRight)
+						py = crc_pyimpl(crc, data)
+						c = crc_cimpl(crc, data)
+						if ref != py or ref != c:
+							raise CrcGenError(
+								f"Test failed: "
+								f"P=0x{self.__P:X}, "
+								f"nrCrcBits={self.__nrCrcBits}, "
+								f"shiftRight={int(bool(self.__shiftRight))}, "
+								f"nrDataBits={self.__nrDataBits}, "
+								f"data=0x{data:X}, "
+								f"ref=0x{ref:X}, "
+								f"py=0x{py:X}, "
+								f"c=0x{c:X}")
+						crc = ref
+						data = (data + 1) & dataMask
 		finally:
 			if tmpdir:
 				shutil.rmtree(tmpdir, ignore_errors=True)

@@ -261,13 +261,18 @@ def checkReferenceNrDataBits(nrCrcBits, polynomial):
 			raise Exception(f"CrcRefernce 32 bit word test FAILED! "
 					f"({nrCrcBits=}, P={polynomial:X})")
 
-def compareGeneratedImpl(optimize, alg, crcParameters):
-	gen = CrcGen(P=crcParameters["polynomial"],
-		     nrCrcBits=crcParameters["nrBits"],
-		     nrDataBits=8,
-		     shiftRight=crcParameters["shiftRight"],
-		     optimize=optimize)
-	gen.runTests(name=alg, extra=("-O=%d" % optimize))
+def compareGeneratedImpl(optimize, alg, crcParameters, quick):
+	if quick == "quick":
+		dataBitsRange = (8, 16)
+	else:
+		dataBitsRange = (8, 16, 24, 32, 33, 1)
+	for nrDataBits in dataBitsRange:
+		gen = CrcGen(P=crcParameters["polynomial"],
+			     nrCrcBits=crcParameters["nrBits"],
+			     nrDataBits=nrDataBits,
+			     shiftRight=crcParameters["shiftRight"],
+			     optimize=optimize)
+		gen.runTests(name=alg, extra=("-O=%d" % optimize))
 
 if __name__ == "__main__":
 	assert bitreverse(0xE0, 8) == 0x07
@@ -346,10 +351,18 @@ if __name__ == "__main__":
 	with multiprocessing.Pool() as p:
 		p.starmap(compareReferenceImpl, params)
 
-	print("*** Comparing generated CRC functions to reference implementation ***")
-	def makeParams():
-		for optimize in reversed(range(1 << CrcGen.OPT_ALL.bit_length())):
+	def makeParams(allOptPermut, quick="not_quick"):
+		if allOptPermut:
+			for optimize in reversed(range(1 << CrcGen.OPT_ALL.bit_length())):
+				yield optimize, "CRC-16", CRC_PARAMETERS["CRC-16"], quick
+		else:
 			for alg, crcParameters in CRC_PARAMETERS.items():
-				yield optimize, alg, crcParameters
+				yield CrcGen.OPT_ALL, alg, crcParameters, quick
+	print("*** Comparing generated CRC functions "
+	      "to reference implementation (with all optimization option permutations)***")
 	with multiprocessing.Pool() as p:
-		p.starmap(compareGeneratedImpl, tuple(makeParams()))
+		p.starmap(compareGeneratedImpl, tuple(makeParams(allOptPermut=True, quick="quick")))
+	print("*** Comparing all generated CRC functions "
+	      "to reference implementation (with full optimization)***")
+	with multiprocessing.Pool() as p:
+		p.starmap(compareGeneratedImpl, tuple(makeParams(allOptPermut=False)))
