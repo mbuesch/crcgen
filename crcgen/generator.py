@@ -34,7 +34,7 @@ __all__ = [
 @dataclass(frozen=True)
 class AbstractBit(object):
 	def flatten(self):
-		return self
+		return [self, ]
 
 	def optimize(self, sortLex):
 		pass
@@ -77,14 +77,11 @@ class XOR(object):
 		self.items = items
 
 	def flatten(self):
-		newItems = []
-		for item in self.items:
-			if isinstance(item, XOR):
-				newItems.extend(item.flatten().items)
-			else:
-				newItems.append(item)
+		newItems = [ item
+			     for subItems in self.items
+			     for item in subItems.flatten() ]
 		self.items = newItems
-		return self
+		return newItems
 
 	def optimize(self, sortLex):
 		newItems = []
@@ -141,7 +138,8 @@ class Word(object):
 		return self.items[index]
 
 	def flatten(self):
-		self.items = [ item.flatten() for item in self.items ]
+		for item in self.items:
+			item.flatten()
 
 	def optimize(self, sortLex):
 		for item in self.items:
