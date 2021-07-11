@@ -78,8 +78,8 @@ class XOR(object):
 
 	def flatten(self):
 		newItems = [ item
-			     for subItems in self.items
-			     for item in subItems.flatten() ]
+			     for subItem in self.items
+			     for item in subItem.flatten() ]
 		self.items = newItems
 		return newItems
 
@@ -88,13 +88,13 @@ class XOR(object):
 		haveBits = {}
 		constOnes = []
 		for item in self.items:
-			if isinstance(item, ConstBit):
+			if isinstance(item, Bit):
+				# Store bit for even/uneven count analysis.
+				haveBits[item] = haveBits.get(item, 0) + 1
+			elif isinstance(item, ConstBit):
 				# Constant 0 does not change the XOR result. Remove it.
 				if item.value:
 					constOnes.append(item)
-			elif isinstance(item, Bit):
-				# Store bit for even/uneven count analysis.
-				haveBits[item] = haveBits.get(item, 0) + 1
 			else:
 				# This is something else. Keep it.
 				newItems.append(item)
