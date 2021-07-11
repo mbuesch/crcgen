@@ -31,7 +31,7 @@ __all__ = [
 	"poly2int",
 ]
 
-@dataclass
+@dataclass(frozen=True)
 class AbstractBit(object):
 	def flatten(self):
 		return self
@@ -39,7 +39,7 @@ class AbstractBit(object):
 	def optimize(self, sortLex):
 		pass
 
-@dataclass
+@dataclass(frozen=True)
 class Bit(AbstractBit):
 	name: str
 	index: int
@@ -56,7 +56,7 @@ class Bit(AbstractBit):
 	def sortKey(self):
 		return "%s_%07d" % (self.name, self.index)
 
-@dataclass
+@dataclass(frozen=True)
 class ConstBit(AbstractBit):
 	value: int
 
@@ -88,34 +88,26 @@ class XOR(object):
 
 	def optimize(self, sortLex):
 		newItems = []
+		haveBits = {}
+		constOnes = []
 		for item in self.items:
 			if isinstance(item, ConstBit):
-				if item.value == 0:
-					# Constant 0 does not change the XOR result.
-					# Remove it.
-					pass
-				else:
-					# Keep it.
-					newItems.append(item)
+				# Constant 0 does not change the XOR result. Remove it.
+				if item.value:
+					constOnes.append(item)
 			elif isinstance(item, Bit):
-				if item in newItems:
-					# We already have this bit.
-					# Remove it.
-					pass
-				else:
-					if sum(1 if (isinstance(i, Bit) and i == item) else 0
-					       for i in self.items) % 2:
-						# We have an uneven count of this bit.
-						# Keep it once.
-						newItems.append(item)
-					else:
-						# An even amount cancels out in XOR.
-						# Remove it.
-						pass
+				# Store bit for even/uneven count analysis.
+				haveBits[item] = haveBits.get(item, 0) + 1
 			else:
-				# This is something else.
-				# Keep it.
+				# This is something else. Keep it.
 				newItems.append(item)
+		# An even count of the same bit is equal to zero. Remove them.
+		# An uneven count of the same bit is equal to one of them. Keep one.
+		newItems.extend(bit for bit, count in haveBits.items()
+				if count % 2)
+		# If there's an uneven amount of constant ones, keep one of them.
+		if len(constOnes) % 2:
+			newItems.append(constOnes[0])
 		if sortLex:
 			# XOR can be arranged in any order.
 			newItems.sort(key=lambda item: item.sortKey())
