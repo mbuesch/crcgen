@@ -238,6 +238,7 @@ class CrcGen(object):
 	def __header(self):
 		return """\
 THIS IS GENERATED CODE.
+https://bues.ch/h/crcgen
 
 This code is Public Domain.
 Permission to use, copy, modify, and/or distribute this software for any
