@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # vim: ts=8 sw=8 noexpandtab
 #
 #   CRC code generator
