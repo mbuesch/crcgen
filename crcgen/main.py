@@ -39,6 +39,7 @@ def main():
 		g.add_argument("-p", "--python", action="store_true", help="Generate Python code")
 		g.add_argument("-v", "--verilog-function", action="store_true", help="Generate Verilog function")
 		g.add_argument("-m", "--verilog-module", action="store_true", help="Generate Verilog module")
+		g.add_argument("-M", "--myhdl", action="store_true", help="Generate MyHDL block")
 		g.add_argument("-c", "--c", action="store_true", help="Generate C code")
 		g.add_argument("-t", "--test", action="store_true", help="Run unit tests for the specified algorithm")
 		g.add_argument("-T", "--polynomial-convert", type=str, help="Convert a polynomial from string to int or vice versa.")
@@ -147,6 +148,11 @@ def main():
 						     inDataName=args.data_param,
 						     inCrcName=args.crc_in_param,
 						     outCrcName=args.crc_out_param))
+			elif args.myhdl:
+				print(gen.genMyHDL(blockName=args.name,
+						   inDataName=args.data_param,
+						   inCrcName=args.crc_in_param,
+						   outCrcName=args.crc_out_param))
 			elif args.c:
 				print(gen.genC(funcName=args.name,
 					       crcVarName=args.crc_in_param,

@@ -53,6 +53,9 @@ class Bit(AbstractBit):
 	def gen_verilog(self):
 		return "%s[%d]" % (self.name, self.index)
 
+	def gen_myhdl(self):
+		return "%s[%d]" % (self.name, self.index)
+
 	def sortKey(self):
 		return "%s_%07d" % (self.name, self.index)
 
@@ -68,6 +71,9 @@ class ConstBit(AbstractBit):
 
 	def gen_verilog(self):
 		return "1'b1" if self.value else "1'b0"
+
+	def gen_myhdl(self):
+		return "1" if self.value else "0"
 
 	def sortKey(self):
 		return "1" if self.value else "0"
@@ -125,6 +131,10 @@ class XOR(object):
 	def gen_verilog(self):
 		assert(self.items)
 		return "(%s)" % (" ^ ".join(item.gen_verilog() for item in self.items))
+
+	def gen_myhdl(self):
+		assert(self.items)
+		return "(%s)" % (" ^ ".join(item.gen_myhdl() for item in self.items))
 
 	def sortKey(self):
 		return "__".join(item.sortKey() for item in self.items)
@@ -338,6 +348,37 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 			ret.append("endmodule")
 			ret.append("")
 			ret.append("`endif // %s_V_" % name.upper())
+		return "\n".join(ret)
+
+	def genMyHDL(self,
+		     blockName="crc",
+		     inDataName="inData",
+		     inCrcName="inCrc",
+		     outCrcName="outCrc"):
+		word = self.__gen(inDataName, inCrcName)
+		ret = []
+		ret.append("# vim: ts=8 sw=8 noexpandtab")
+		ret.append("")
+		ret.extend("# " + l for l in self.__header().splitlines())
+		ret.append("")
+		ret.append("from myhdl import *")
+		ret.append("")
+		ret.append("@block")
+		ret.append(f"def {blockName}({inCrcName}, {inDataName}, {outCrcName}):")
+		ret.append("\t@always_comb")
+		ret.append("\tdef logic():")
+		for i, bit in enumerate(word):
+			ret.append(f"\t\t{outCrcName}[{i}].next = {bit.gen_myhdl()}")
+		ret.append("\treturn logic")
+		ret.append("")
+		ret.append("if __name__ == '__main__':")
+		ret.append(f"\tinstance = {blockName}(")
+		ret.append(f"\t\t{inCrcName}=Signal(intbv(0)[{self.__nrCrcBits}:]),")
+		ret.append(f"\t\t{inDataName}=Signal(intbv(0)[{self.__nrDataBits}:]),")
+		ret.append(f"\t\t{outCrcName}=Signal(intbv(0)[{self.__nrCrcBits}:])")
+		ret.append(f"\t)")
+		ret.append(f"\tinstance.convert(hdl='Verilog')")
+		ret.append(f"\tinstance.convert(hdl='VHDL')")
 		return "\n".join(ret)
 
 	def genC(self,
