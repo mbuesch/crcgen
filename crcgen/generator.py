@@ -207,6 +207,15 @@ class CrcGen(object):
 				return XOR(dataBit, queryBit)
 			return dataBit
 
+		# Helper function to optimize the algorithm.
+		# This removes unnecessary operations.
+		def optimize(word, sort=False):
+			if self.__optimize & self.OPT_FLATTEN:
+				word.flatten()
+			if self.__optimize & self.OPT_ELIMINATE:
+				word.optimize(sortLex=(sort and (self.__optimize & self.OPT_LEX)))
+			return word
+
 		# Run the shift register for each input data bit.
 		word = inCrc
 		if self.__shiftRight:
@@ -221,7 +230,7 @@ class CrcGen(object):
 					# XOR the polynomial coefficient, if the query bit is set.
 					stateBit = xor_P(stateBit, queryBit, j)
 					bits.append(stateBit)
-				word = Word(*bits)
+				word = optimize(Word(*bits))
 		else:
 			for i in reversed(range(nrDataBits)):
 				# Run the shift register once.
@@ -234,16 +243,10 @@ class CrcGen(object):
 					# XOR the polynomial coefficient, if the query bit is set.
 					stateBit = xor_P(stateBit, queryBit, j)
 					bits.append(stateBit)
-				word = Word(*bits)
-		outCrc = word
+				word = optimize(Word(*bits))
+		word = optimize(word, sort=True)
 
-		# Optimize the algorithm. This removes unnecessary operations.
-		if self.__optimize & self.OPT_FLATTEN:
-			outCrc.flatten()
-		if self.__optimize & self.OPT_ELIMINATE:
-			outCrc.optimize(sortLex=bool(self.__optimize & self.OPT_LEX))
-
-		return outCrc
+		return word
 
 	def __header(self):
 		return """\
