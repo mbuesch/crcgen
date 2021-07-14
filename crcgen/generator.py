@@ -45,19 +45,19 @@ class Bit(AbstractBit):
 	index: int
 
 	def gen_python(self):
-		return "%s[%d]" % (self.name, self.index)
+		return f"{self.name}[{self.index}]"
 
 	def gen_c(self):
-		return "b(%s, %d)" % (self.name, self.index)
+		return f"b({self.name}, {self.index})"
 
 	def gen_verilog(self):
-		return "%s[%d]" % (self.name, self.index)
+		return f"{self.name}[{self.index}]"
 
 	def gen_myhdl(self):
-		return "%s[%d]" % (self.name, self.index)
+		return f"{self.name}[{self.index}]"
 
 	def sortKey(self):
-		return "%s_%07d" % (self.name, self.index)
+		return f"{self.name}_{self.index:07}"
 
 @dataclass(frozen=True)
 class ConstBit(AbstractBit):
@@ -122,19 +122,19 @@ class XOR(object):
 
 	def gen_python(self):
 		assert(self.items)
-		return "(%s)" % (" ^ ".join(item.gen_python() for item in self.items))
+		return "(" + (" ^ ".join(item.gen_python() for item in self.items)) + ")"
 
 	def gen_c(self):
 		assert(self.items)
-		return "(%s)" % (" ^ ".join(item.gen_c() for item in self.items))
+		return "(" + (" ^ ".join(item.gen_c() for item in self.items)) + ")"
 
 	def gen_verilog(self):
 		assert(self.items)
-		return "(%s)" % (" ^ ".join(item.gen_verilog() for item in self.items))
+		return "(" + (" ^ ".join(item.gen_verilog() for item in self.items)) + ")"
 
 	def gen_myhdl(self):
 		assert(self.items)
-		return "(%s)" % (" ^ ".join(item.gen_myhdl() for item in self.items))
+		return "(" + (" ^ ".join(item.gen_myhdl() for item in self.items)) + ")"
 
 	def sortKey(self):
 		return "__".join(item.sortKey() for item in self.items)
@@ -263,17 +263,13 @@ NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE
 USE OR PERFORMANCE OF THIS SOFTWARE."""
 
 	def __algDescription(self):
-		return ("CRC polynomial coefficients: %s\n"
-			"                             0x%X (hex)\n"
-			"CRC width:                   %d bits\n"
-			"CRC shift direction:         %s\n"
-			"Input word width:            %d bits\n" % (
-			int2poly(self.__P, self.__nrCrcBits, self.__shiftRight),
-			self.__P,
-			self.__nrCrcBits,
-			"right (little endian)" if self.__shiftRight else "left (big endian)",
-			self.__nrDataBits,
-		))
+		pstr = int2poly(self.__P, self.__nrCrcBits, self.__shiftRight)
+		shift = "right (little endian)" if self.__shiftRight else "left (big endian)"
+		return (f"CRC polynomial coefficients: {pstr}\n"
+			f"                             0x{self.__P:X} (hex)\n"
+			f"CRC width:                   {self.__nrCrcBits} bits\n"
+			f"CRC shift direction:         {shift}\n"
+			f"Input word width:            {self.__nrDataBits} bits\n")
 
 	def genPython(self,
 		      funcName="crc",
@@ -287,22 +283,22 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 		ret.append("")
 		ret.extend("# " + l for l in self.__algDescription().splitlines())
 		ret.append("")
-		ret.append("def %s(%s, %s):" % (funcName, crcVarName, dataVarName))
-		ret.append("\tclass bitwrapper:")
-		ret.append("\t\tdef __init__(self, value):")
-		ret.append("\t\t\tself.value = value")
-		ret.append("\t\tdef __getitem__(self, index):")
-		ret.append("\t\t\treturn ((self.value >> index) & 1)")
-		ret.append("\t\tdef __setitem__(self, index, value):")
-		ret.append("\t\t\tif value:")
-		ret.append("\t\t\t\tself.value |= 1 << index")
-		ret.append("\t\t\telse:")
-		ret.append("\t\t\t\tself.value &= ~(1 << index)")
-		ret.append("\t%s = bitwrapper(%s)" % (crcVarName, crcVarName))
-		ret.append("\t%s = bitwrapper(%s)" % (dataVarName, dataVarName))
-		ret.append("\tret = bitwrapper(0)")
+		ret.append(f"def {funcName}({crcVarName}, {dataVarName}):")
+		ret.append(f"\tclass bitwrapper:")
+		ret.append(f"\t\tdef __init__(self, value):")
+		ret.append(f"\t\t\tself.value = value")
+		ret.append(f"\t\tdef __getitem__(self, index):")
+		ret.append(f"\t\t\treturn ((self.value >> index) & 1)")
+		ret.append(f"\t\tdef __setitem__(self, index, value):")
+		ret.append(f"\t\t\tif value:")
+		ret.append(f"\t\t\t\tself.value |= 1 << index")
+		ret.append(f"\t\t\telse:")
+		ret.append(f"\t\t\t\tself.value &= ~(1 << index)")
+		ret.append(f"\t{crcVarName} = bitwrapper({crcVarName})")
+		ret.append(f"\t{dataVarName} = bitwrapper({dataVarName})")
+		ret.append(f"\tret = bitwrapper(0)")
 		for i, bit in enumerate(word):
-			ret.append("\tret[%d] = %s" % (i, bit.gen_python()))
+			ret.append(f"\tret[{i}] = {bit.gen_python()}")
 		ret.append("\treturn ret.value")
 		return "\n".join(ret)
 
@@ -319,35 +315,34 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 		ret.extend("// " + l for l in self.__header().splitlines())
 		ret.append("")
 		if not genFunction:
-			ret.append("`ifndef %s_V_" % name.upper())
-			ret.append("`define %s_V_" % name.upper())
+			ret.append(f"`ifndef {name.upper()}_V_")
+			ret.append(f"`define {name.upper()}_V_")
 			ret.append("")
 		ret.extend("// " + l for l in self.__algDescription().splitlines())
 		ret.append("")
 		if genFunction:
-			ret.append("function automatic [%d:0] %s;" % (self.__nrCrcBits - 1, name))
+			ret.append(f"function automatic [{self.__nrCrcBits - 1}:0] {name};")
 		else:
-			ret.append("module %s (" % name)
-		ret.append("\tinput [%d:0] %s%s" % (self.__nrCrcBits - 1, inCrcName,
-						    ";" if genFunction else ","))
-		ret.append("\tinput [%d:0] %s%s" % (self.__nrDataBits - 1, inDataName,
-						    ";" if genFunction else ","))
+			ret.append(f"module {name} (")
+		end = ";" if genFunction else ","
+		ret.append(f"\tinput [{self.__nrCrcBits - 1}:0] {inCrcName}{end}")
+		ret.append(f"\tinput [{self.__nrDataBits - 1}:0] {inDataName}{end}")
 		if genFunction:
 			ret.append("begin")
 		else:
-			ret.append("\toutput [%d:0] %s," % (self.__nrCrcBits - 1, outCrcName))
+			ret.append(f"\toutput [{self.__nrCrcBits - 1}:0] {outCrcName},")
 			ret.append(");")
 		for i, bit in enumerate(word):
-			ret.append("\t%s%s[%d] = %s;" % ("" if genFunction else "assign ",
-							 name if genFunction else outCrcName,
-							 i, bit.gen_verilog()))
+			assign = "" if genFunction else "assign "
+			assignName = name if genFunction else outCrcName
+			ret.append(f"\t{assign}{assignName}[{i}] = {bit.gen_verilog()};")
 		if genFunction:
 			ret.append("end")
 			ret.append("endfunction")
 		else:
 			ret.append("endmodule")
 			ret.append("")
-			ret.append("`endif // %s_V_" % name.upper())
+			ret.append(f"`endif // {name.upper()}_V_")
 		return "\n".join(ret)
 
 	def genMyHDL(self,
@@ -404,7 +399,7 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 				raise CrcGenError("C code generator: " + name + " sizes "
 						  "bigger than 64 bit "
 						  "are not supported.")
-			return "uint%s_t" % cBits
+			return f"uint{cBits}_t"
 		cCrcType = makeCType(self.__nrCrcBits, "CRC")
 		cDataType = makeCType(self.__nrDataBits, "Input data")
 		ret = []
@@ -413,8 +408,8 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 		ret.extend("// " + l for l in self.__header().splitlines())
 		ret.append("")
 		if includeGuards:
-			ret.append("#ifndef %s_H_" % funcName.upper())
-			ret.append("#define %s_H_" % funcName.upper())
+			ret.append(f"#ifndef {funcName.upper()}_H_")
+			ret.append(f"#define {funcName.upper()}_H_")
 		if includes:
 			ret.append("")
 			ret.append("#include <stdint.h>")
@@ -427,33 +422,24 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 			ret.append("#endif")
 			ret.append("#define b(x, b) (((x) >> (b)) & 1u)")
 			ret.append("")
-		ret.append("{extern}{static}{inline}{cCrcType} "
-			   "{func}({cCrcType} {crcVar}, {cDataType} {dataVar}){end}".format(
-			   extern="extern " if declOnly else "",
-			   static="static " if static and not declOnly else "",
-			   inline="inline " if inline and not declOnly else "",
-			   cCrcType=cCrcType,
-			   cDataType=cDataType,
-			   func=funcName,
-			   crcVar=crcVarName,
-			   dataVar=dataVarName,
-			   end=";" if declOnly else "",
-		))
+		extern = "extern " if declOnly else ""
+		static = "static " if static and not declOnly else ""
+		inline = "inline " if inline and not declOnly else ""
+		end = ";" if declOnly else ""
+		ret.append(f"{extern}{static}{inline}{cCrcType} "
+			   f"{funcName}({cCrcType} {crcVarName}, {cDataType} {dataVarName}){end}")
 		if not declOnly:
 			ret.append("{")
-			ret.append("\t%s ret;" % cCrcType)
+			ret.append(f"\t{cCrcType} ret;")
 			for i, bit in enumerate(word):
-				if i:
-					operator = "|="
-				else:
-					operator = " ="
-				ret.append("\tret %s (%s)%s << %d;" % (operator, cCrcType, bit.gen_c(), i))
+				operator = "|=" if i > 0 else " ="
+				ret.append(f"\tret {operator} ({cCrcType}){bit.gen_c()} << {i};")
 			ret.append("\treturn ret;")
 			ret.append("}")
 			ret.append("#undef b")
 		if includeGuards:
 			ret.append("")
-			ret.append("#endif /* %s_H_ */" % funcName.upper())
+			ret.append(f"#endif /* {funcName.upper()}_H_ */")
 		return "\n".join(ret)
 
 	def runTests(self, name=None, extra=None):
@@ -484,7 +470,7 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 			ffibuilder.cdef(self.genC(declOnly=True,
 						  includeGuards=False,
 						  includes=False))
-			tmpdir = "tmp_%d_%d" % (os.getpid(), int(time.time() * 1e6))
+			tmpdir = f"tmp_{os.getpid()}_{int(time.time() * 1e6)}"
 			ffibuilder.compile(tmpdir=tmpdir, verbose=False)
 			testmod_crcgen = importlib.import_module(tmpdir + ".testmod_crcgen")
 			crc_cimpl = testmod_crcgen.lib.crc
@@ -569,8 +555,8 @@ def int2poly(poly, nrBits, shiftRight=False):
 			elif shift == 1:
 				p.append("x")
 			else:
-				p.append("x^%d" % shift)
+				p.append(f"x^{shift}")
 		shift += 1
 		poly >>= 1
-	p.append("x^%d" % nrBits)
+	p.append(f"x^{nrBits}")
 	return " + ".join(reversed(p))

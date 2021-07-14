@@ -60,18 +60,13 @@ def main():
 		p.add_argument("-S", "--static", action="store_true", help="Generate static C function")
 		p.add_argument("-I", "--inline", action="store_true", help="Generate inline C function")
 		p.add_argument("-O", "--optimize", type=argInt, default=CrcGen.OPT_ALL,
-			       help="Select individual algorithm optimizer steps. "
-				    "The argument to the -O option can be any sum of the following integers: "
-				    "-O%d (Flatten the bit operation tree), "
-				    "-O%d (Eliminate redundant operations), "
-				    "-O%d (Sort the operands in lexicographical order where possible). "
-				    "-O%d disables all optimizer steps. "
-				    "If this option is not given, then by default all optimizer steps are enabled (-O%d)." % (
-				    CrcGen.OPT_FLATTEN,
-				    CrcGen.OPT_ELIMINATE,
-				    CrcGen.OPT_LEX,
-				    CrcGen.OPT_NONE,
-				    CrcGen.OPT_ALL))
+			       help=f"Select individual algorithm optimizer steps. "
+				    f"The argument to the -O option can be any sum of the following integers: "
+				    f"-O{CrcGen.OPT_FLATTEN} (Flatten the bit operation tree), "
+				    f"-O{CrcGen.OPT_ELIMINATE} (Eliminate redundant operations), "
+				    f"-O{CrcGen.OPT_LEX} (Sort the operands in lexicographical order where possible). "
+				    f"-O{CrcGen.OPT_NONE} disables all optimizer steps. "
+				    f"If this option is not given, then by default all optimizer steps are enabled (-O{CrcGen.OPT_ALL}).")
 		args = p.parse_args()
 
 		if (args.nr_crc_bits is not None and
@@ -85,9 +80,10 @@ def main():
 				raise CrcGenError("-B|--nr-crc-bits is required for -T|--polynomial-convert")
 			try:
 				if "^" in args.polynomial_convert.lower():
-					print("0x%X" % poly2int(args.polynomial_convert,
-								args.nr_crc_bits,
-								args.shift_right))
+					p = poly2int(args.polynomial_convert,
+						     args.nr_crc_bits,
+						     args.shift_right)
+					print(f"0x{p:X}")
 				else:
 					print(int2poly(int(args.polynomial_convert, 0),
 						       args.nr_crc_bits,
@@ -120,9 +116,9 @@ def main():
 		shiftRight = crcParameters["shiftRight"]
 
 		if polynomial > ((1 << nrCrcBits) - 1):
-			raise CrcGenError("Invalid polynomial. "
-					  "It is bigger than the CRC width "
-					  "of (2**%d)-1." % nrCrcBits)
+			raise CrcGenError(f"Invalid polynomial. "
+					  f"It is bigger than the CRC width "
+					  f"of (2**{nrCrcBits})-1.")
 
 		gen = CrcGen(P=polynomial,
 			     nrCrcBits=nrCrcBits,
@@ -161,5 +157,5 @@ def main():
 					       inline=args.inline))
 		return 0
 	except CrcGenError as e:
-		print("ERROR: %s" % str(e), file=sys.stderr)
+		print("ERROR: " + str(e), file=sys.stderr)
 	return 1
