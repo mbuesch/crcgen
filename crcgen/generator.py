@@ -53,6 +53,9 @@ class Bit(AbstractBit):
 	def gen_verilog(self):
 		return f"{self.name}[{self.index}]"
 
+	def gen_vhdl(self):
+		return f"{self.name}({self.index})"
+
 	def gen_myhdl(self):
 		return f"{self.name}[{self.index}]"
 
@@ -71,6 +74,9 @@ class ConstBit(AbstractBit):
 
 	def gen_verilog(self):
 		return "1'b1" if self.value else "1'b0"
+
+	def gen_vhdl(self):
+		return 'b"1"' if self.value else 'b"0"'
 
 	def gen_myhdl(self):
 		return "1" if self.value else "0"
@@ -121,20 +127,23 @@ class XOR(object):
 		self.items = newItems
 
 	def gen_python(self):
-		assert(self.items)
-		return "(" + (" ^ ".join(item.gen_python() for item in self.items)) + ")"
+		return self.__gen("(", ")", " ^ ", lambda item: item.gen_python())
 
 	def gen_c(self):
-		assert(self.items)
-		return "(" + (" ^ ".join(item.gen_c() for item in self.items)) + ")"
+		return self.__gen("(", ")", " ^ ", lambda item: item.gen_c())
 
 	def gen_verilog(self):
-		assert(self.items)
-		return "(" + (" ^ ".join(item.gen_verilog() for item in self.items)) + ")"
+		return self.__gen("(", ")", " ^ ", lambda item: item.gen_verilog())
+
+	def gen_vhdl(self):
+		return self.__gen("(", ")", " xor ", lambda item: item.gen_vhdl())
 
 	def gen_myhdl(self):
+		return self.__gen("(", ")", " ^ ", lambda item: item.gen_myhdl())
+
+	def __gen(self, prefix, suffix, oper, itemGen):
 		assert(self.items)
-		return "(" + (" ^ ".join(item.gen_myhdl() for item in self.items)) + ")"
+		return prefix + (oper.join(itemGen(item) for item in self.items)) + suffix
 
 	def sortKey(self):
 		return "__".join(item.sortKey() for item in self.items)
@@ -348,6 +357,37 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 			ret.append(f"`endif // {name.upper()}_V_")
 		return "\n".join(ret)
 
+	def genVHDL(self,
+		    name="crc",
+		    inDataName="inData",
+		    inCrcName="inCrc",
+		    outCrcName="outCrc"):
+		word = self.__gen(inDataName, inCrcName)
+		ret = []
+		ret.append(f"-- vim: ts=4 sw=4 expandtab")
+		ret.append(f"")
+		ret.extend(f"-- " + l for l in self.__header().splitlines())
+		ret.append(f"")
+		ret.extend(f"-- " + l for l in self.__algDescription().splitlines())
+		ret.append(f"")
+		ret.append(f"library IEEE;")
+		ret.append(f"use IEEE.std_logic_1164.all;")
+		ret.append(f"")
+		ret.append(f"entity {name} is")
+		ret.append(f"    port (")
+		ret.append(f"        {inCrcName}: in std_logic_vector({self.__nrCrcBits} downto 0);")
+		ret.append(f"        {inDataName}: in std_logic_vector({self.__nrDataBits} downto 0);")
+		ret.append(f"        {outCrcName}: out std_logic_vector({self.__nrCrcBits} downto 0)")
+		ret.append(f"    );")
+		ret.append(f"end entity {name};")
+		ret.append(f"")
+		ret.append(f"architecture Behavioral of {name} is")
+		ret.append(f"begin")
+		for i, bit in enumerate(word):
+			ret.append(f"    {outCrcName}({i}) <= {bit.gen_vhdl()};")
+		ret.append(f"end architecture Behavioral;")
+		return "\n".join(ret)
+
 	def genMyHDL(self,
 		     blockName="crc",
 		     inDataName="inData",
@@ -358,6 +398,8 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 		ret.append("# vim: ts=8 sw=8 noexpandtab")
 		ret.append("")
 		ret.extend("# " + l for l in self.__header().splitlines())
+		ret.append("")
+		ret.extend("# " + l for l in self.__algDescription().splitlines())
 		ret.append("")
 		ret.append("from myhdl import *")
 		ret.append("")
