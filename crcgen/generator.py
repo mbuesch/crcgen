@@ -257,9 +257,9 @@ class CrcGen(object):
 
 		return word
 
-	def __header(self):
-		return """\
-THIS IS GENERATED CODE.
+	def __header(self, language):
+		return f"""\
+THIS IS GENERATED {language.upper()} CODE.
 https://bues.ch/h/crcgen
 
 This code is Public Domain.
@@ -291,7 +291,7 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 		ret = []
 		ret.append("# vim: ts=8 sw=8 noexpandtab")
 		ret.append("")
-		ret.extend("# " + l for l in self.__header().splitlines())
+		ret.extend("# " + l for l in self.__header("Python").splitlines())
 		ret.append("")
 		ret.extend("# " + l for l in self.__algDescription().splitlines())
 		ret.append("")
@@ -321,7 +321,7 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 		ret = []
 		ret.append("// vim: ts=4 sw=4 noexpandtab")
 		ret.append("")
-		ret.extend("// " + l for l in self.__header().splitlines())
+		ret.extend("// " + l for l in self.__header("Verilog").splitlines())
 		ret.append("")
 		if not genFunction:
 			ret.append(f"`ifndef {name.upper()}_V_")
@@ -363,7 +363,7 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 		ret = []
 		ret.append(f"-- vim: ts=4 sw=4 expandtab")
 		ret.append(f"")
-		ret.extend(f"-- " + l for l in self.__header().splitlines())
+		ret.extend(f"-- " + l for l in self.__header("VHDL").splitlines())
 		ret.append(f"")
 		ret.extend(f"-- " + l for l in self.__algDescription().splitlines())
 		ret.append(f"")
@@ -394,7 +394,7 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 		ret = []
 		ret.append("# vim: ts=8 sw=8 noexpandtab")
 		ret.append("")
-		ret.extend("# " + l for l in self.__header().splitlines())
+		ret.extend("# " + l for l in self.__header("MyHDL").splitlines())
 		ret.append("")
 		ret.extend("# " + l for l in self.__algDescription().splitlines())
 		ret.append("")
@@ -447,7 +447,7 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 		ret = []
 		ret.append("// vim: ts=4 sw=4 noexpandtab")
 		ret.append("")
-		ret.extend("// " + l for l in self.__header().splitlines())
+		ret.extend("// " + l for l in self.__header("C").splitlines())
 		ret.append("")
 		if includeGuards:
 			ret.append(f"#ifndef {funcName.upper()}_H_")
