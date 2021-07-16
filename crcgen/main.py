@@ -36,14 +36,14 @@ def main():
 			return int(string)
 		p = argparse.ArgumentParser()
 		g = p.add_mutually_exclusive_group(required=True)
-		g.add_argument("-p", "--python", action="store_true", help="Generate Python code")
 		g.add_argument("-v", "--verilog-function", action="store_true", help="Generate Verilog function")
 		g.add_argument("-m", "--verilog-module", action="store_true", help="Generate Verilog module")
 		g.add_argument("-V", "--vhdl", action="store_true", help="Generate VHDL module")
 		g.add_argument("-M", "--myhdl", action="store_true", help="Generate MyHDL block")
+		g.add_argument("-p", "--python", action="store_true", help="Generate Python code")
 		g.add_argument("-c", "--c", action="store_true", help="Generate C code")
-		g.add_argument("-t", "--test", action="store_true", help="Run unit tests for the specified algorithm")
 		g.add_argument("-T", "--polynomial-convert", type=str, help="Convert a polynomial from string to int or vice versa.")
+		g.add_argument("-t", "--test", action="store_true", help="Run unit tests for the specified algorithm")
 		p.add_argument("-a", "--algorithm", type=str,
 			       choices=CRC_PARAMETERS.keys(), default="CRC-32",
 			       help="Select the CRC algorithm. "
