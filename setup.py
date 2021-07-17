@@ -3,7 +3,7 @@
 import sys, os
 basedir = os.path.abspath(os.path.dirname(__file__))
 
-from crcgen.version import VERSION_STRING
+from libcrcgen.version import VERSION_STRING
 from distutils.core import setup
 import warnings
 
@@ -20,10 +20,10 @@ setup(	name		= "crcgen",
 	author_email	= "m@bues.ch",
 	url		= "https://bues.ch/h/crcgen",
 	scripts		= [
-		"scripts/crcgen",
+		"crcgen",
 	],
 	packages	= [
-		"crcgen",
+		"libcrcgen",
 	],
 	keywords	= "CRC Verilog FPGA codegenerator",
 	classifiers	= [

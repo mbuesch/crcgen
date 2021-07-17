@@ -19,9 +19,9 @@
 #   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from crcgen.util import *
-from crcgen.reference import *
 from dataclasses import dataclass
+from libcrcgen.reference import *
+from libcrcgen.util import *
 import re
 
 __all__ = [

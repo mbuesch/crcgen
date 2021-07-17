@@ -3,7 +3,7 @@
 #
 #   CRC code generator
 #
-#   Copyright (c) 2019 Michael Buesch <m@bues.ch>
+#   Copyright (c) 2019-2021 Michael Buesch <m@bues.ch>
 #
 #   This program is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -21,6 +21,6 @@
 #
 
 if __name__ == "__main__":
-	from crcgen.main import main
+	from libcrcgen.main import main
 	import sys
 	sys.exit(main())

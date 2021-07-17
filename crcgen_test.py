@@ -42,11 +42,11 @@
 #  POSSIBILITY OF SUCH DAMAGE.
 #
 
-from crcgen import *
-from crcgen.reference import *
-from crcgen.util import *
-import random
+from libcrcgen import *
+from libcrcgen.reference import *
+from libcrcgen.util import *
 import multiprocessing
+import random
 
 
 # Derived from CRC-32 version 2.0.0 by Craig Bruce, 2006-04-29. (Public Domain):
