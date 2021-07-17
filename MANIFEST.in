@@ -1,3 +1,4 @@
 include COPYING
+include README.html
 include README.rst
 include crcgen_test.py
