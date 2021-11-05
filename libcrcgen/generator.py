@@ -339,7 +339,7 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 		if genFunction:
 			ret.append("begin")
 		else:
-			ret.append(f"\toutput [{self.__nrCrcBits - 1}:0] {outCrcName},")
+			ret.append(f"\toutput [{self.__nrCrcBits - 1}:0] {outCrcName}")
 			ret.append(");")
 		for i, bit in enumerate(word):
 			assign = "" if genFunction else "assign "
