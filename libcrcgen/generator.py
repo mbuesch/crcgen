@@ -289,26 +289,26 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 		      dataVarName="data"):
 		word = self.__gen(dataVarName, crcVarName)
 		ret = []
-		ret.append("# vim: ts=8 sw=8 noexpandtab")
+		ret.append("# vim: ts=4 sw=4 expandtab")
 		ret.append("")
 		ret.extend("# " + l for l in self.__header("Python").splitlines())
 		ret.append("")
 		ret.extend("# " + l for l in self.__algDescription().splitlines())
 		ret.append("")
 		ret.append(f"def {funcName}({crcVarName}, {dataVarName}):")
-		ret.append(f"\tclass bitwrapper:")
-		ret.append(f"\t\tdef __init__(self, x):")
-		ret.append(f"\t\t\tself.x = x")
-		ret.append(f"\t\tdef __getitem__(self, i):")
-		ret.append(f"\t\t\treturn ((self.x >> i) & 1)")
-		ret.append(f"\t\tdef __setitem__(self, i, x):")
-		ret.append(f"\t\t\tself.x = (self.x | (1 << i)) if x else (self.x & ~(1 << i))")
-		ret.append(f"\t{crcVarName} = bitwrapper({crcVarName})")
-		ret.append(f"\t{dataVarName} = bitwrapper({dataVarName})")
-		ret.append(f"\tret = bitwrapper(0)")
+		ret.append(f"    class bitwrapper:")
+		ret.append(f"        def __init__(self, x):")
+		ret.append(f"            self.x = x")
+		ret.append(f"        def __getitem__(self, i):")
+		ret.append(f"            return ((self.x >> i) & 1)")
+		ret.append(f"        def __setitem__(self, i, x):")
+		ret.append(f"            self.x = (self.x | (1 << i)) if x else (self.x & ~(1 << i))")
+		ret.append(f"    {crcVarName} = bitwrapper({crcVarName})")
+		ret.append(f"    {dataVarName} = bitwrapper({dataVarName})")
+		ret.append(f"    ret = bitwrapper(0)")
 		for i, bit in enumerate(word):
-			ret.append(f"\tret[{i}] = {bit.gen_python()}")
-		ret.append("\treturn ret.x")
+			ret.append(f"    ret[{i}] = {bit.gen_python()}")
+		ret.append("    return ret.x")
 		return "\n".join(ret)
 
 	def genVerilog(self,
@@ -319,7 +319,7 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 		       outCrcName="outCrc"):
 		word = self.__gen(inDataName, inCrcName)
 		ret = []
-		ret.append("// vim: ts=4 sw=4 noexpandtab")
+		ret.append("// vim: ts=4 sw=4 expandtab")
 		ret.append("")
 		ret.extend("// " + l for l in self.__header("Verilog").splitlines())
 		ret.append("")
@@ -334,17 +334,17 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 		else:
 			ret.append(f"module {name} (")
 		end = ";" if genFunction else ","
-		ret.append(f"\tinput [{self.__nrCrcBits - 1}:0] {inCrcName}{end}")
-		ret.append(f"\tinput [{self.__nrDataBits - 1}:0] {inDataName}{end}")
+		ret.append(f"    input [{self.__nrCrcBits - 1}:0] {inCrcName}{end}")
+		ret.append(f"    input [{self.__nrDataBits - 1}:0] {inDataName}{end}")
 		if genFunction:
 			ret.append("begin")
 		else:
-			ret.append(f"\toutput [{self.__nrCrcBits - 1}:0] {outCrcName}")
+			ret.append(f"    output [{self.__nrCrcBits - 1}:0] {outCrcName}")
 			ret.append(");")
 		for i, bit in enumerate(word):
 			assign = "" if genFunction else "assign "
 			assignName = name if genFunction else outCrcName
-			ret.append(f"\t{assign}{assignName}[{i}] = {bit.gen_verilog()};")
+			ret.append(f"    {assign}{assignName}[{i}] = {bit.gen_verilog()};")
 		if genFunction:
 			ret.append("end")
 			ret.append("endfunction")
@@ -392,7 +392,7 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 		     outCrcName="outCrc"):
 		word = self.__gen(inDataName, inCrcName)
 		ret = []
-		ret.append("# vim: ts=8 sw=8 noexpandtab")
+		ret.append("# vim: ts=4 sw=4 expandtab")
 		ret.append("")
 		ret.extend("# " + l for l in self.__header("MyHDL").splitlines())
 		ret.append("")
@@ -402,20 +402,20 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 		ret.append("")
 		ret.append("@block")
 		ret.append(f"def {blockName}({inCrcName}, {inDataName}, {outCrcName}):")
-		ret.append("\t@always_comb")
-		ret.append("\tdef logic():")
+		ret.append("    @always_comb")
+		ret.append("    def logic():")
 		for i, bit in enumerate(word):
-			ret.append(f"\t\t{outCrcName}[{i}].next = {bit.gen_myhdl()}")
-		ret.append("\treturn logic")
+			ret.append(f"        {outCrcName}[{i}].next = {bit.gen_myhdl()}")
+		ret.append("    return logic")
 		ret.append("")
 		ret.append("if __name__ == '__main__':")
-		ret.append(f"\tinstance = {blockName}(")
-		ret.append(f"\t\t{inCrcName}=Signal(intbv(0)[{self.__nrCrcBits}:]),")
-		ret.append(f"\t\t{inDataName}=Signal(intbv(0)[{self.__nrDataBits}:]),")
-		ret.append(f"\t\t{outCrcName}=Signal(intbv(0)[{self.__nrCrcBits}:])")
-		ret.append(f"\t)")
-		ret.append(f"\tinstance.convert(hdl='Verilog')")
-		ret.append(f"\tinstance.convert(hdl='VHDL')")
+		ret.append(f"    instance = {blockName}(")
+		ret.append(f"        {inCrcName}=Signal(intbv(0)[{self.__nrCrcBits}:]),")
+		ret.append(f"        {inDataName}=Signal(intbv(0)[{self.__nrDataBits}:]),")
+		ret.append(f"        {outCrcName}=Signal(intbv(0)[{self.__nrCrcBits}:])")
+		ret.append(f"    )")
+		ret.append(f"    instance.convert(hdl='Verilog')")
+		ret.append(f"    instance.convert(hdl='VHDL')")
 		return "\n".join(ret)
 
 	def genC(self,
@@ -445,7 +445,7 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 		cCrcType = makeCType(self.__nrCrcBits, "CRC")
 		cDataType = makeCType(self.__nrDataBits, "Input data")
 		ret = []
-		ret.append("// vim: ts=4 sw=4 noexpandtab")
+		ret.append("// vim: ts=4 sw=4 expandtab")
 		ret.append("")
 		ret.extend("// " + l for l in self.__header("C").splitlines())
 		ret.append("")
@@ -472,11 +472,11 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 			   f"{funcName}({cCrcType} {crcVarName}, {cDataType} {dataVarName}){end}")
 		if not declOnly:
 			ret.append("{")
-			ret.append(f"\t{cCrcType} ret;")
+			ret.append(f"    {cCrcType} ret;")
 			for i, bit in enumerate(word):
 				operator = "|=" if i > 0 else " ="
-				ret.append(f"\tret {operator} ({cCrcType}){bit.gen_c()} << {i};")
-			ret.append("\treturn ret;")
+				ret.append(f"    ret {operator} ({cCrcType}){bit.gen_c()} << {i};")
+			ret.append("    return ret;")
 			ret.append("}")
 			ret.append("#undef b")
 		if includeGuards:
