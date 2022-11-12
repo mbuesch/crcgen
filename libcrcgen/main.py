@@ -140,11 +140,17 @@ def main():
 					  f"It is bigger than the CRC width "
 					  f"of (2**{nrCrcBits})-1.")
 
-		gen = CrcGen(P=polynomial,
-			     nrCrcBits=nrCrcBits,
-			     nrDataBits=args.nr_data_bits,
-			     shiftRight=shiftRight,
-			     optimize=args.optimize)
+		if args.test:
+			from libcrcgen.generator_test import CrcGenTest
+			CrcGenClass = CrcGenTest
+		else:
+			CrcGenClass = CrcGen
+
+		gen = CrcGenClass(P=polynomial,
+				  nrCrcBits=nrCrcBits,
+				  nrDataBits=args.nr_data_bits,
+				  shiftRight=shiftRight,
+				  optimize=args.optimize)
 		if args.test:
 			gen.runTests()
 		else:

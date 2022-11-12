@@ -2,7 +2,7 @@
 #
 #   CRC code generator
 #
-#   Copyright (c) 2020-2021 Michael Buesch <m@bues.ch>
+#   Copyright (c) 2020-2022 Michael Buesch <m@bues.ch>
 #
 #   This program is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -20,7 +20,6 @@
 #
 
 from dataclasses import dataclass
-from libcrcgen.reference import *
 from libcrcgen.util import *
 import re
 
@@ -184,15 +183,15 @@ class CrcGen(object):
 		     nrDataBits=8,
 		     shiftRight=False,
 		     optimize=OPT_ALL):
-		self.__P = P
-		self.__nrCrcBits = nrCrcBits
-		self.__nrDataBits = nrDataBits
-		self.__shiftRight = shiftRight
-		self.__optimize = optimize
+		self._P = P
+		self._nrCrcBits = nrCrcBits
+		self._nrDataBits = nrDataBits
+		self._shiftRight = shiftRight
+		self._optimize = optimize
 
 	def __gen(self, dataVarName, crcVarName):
-		nrCrcBits = self.__nrCrcBits
-		nrDataBits = self.__nrDataBits
+		nrCrcBits = self._nrCrcBits
+		nrDataBits = self._nrDataBits
 		if nrCrcBits < 1 or nrDataBits < 1:
 			raise CrcGenError("Invalid number of bits.")
 
@@ -212,22 +211,22 @@ class CrcGen(object):
 		# if the decision bit 'queryBit' is set.
 		# This is done reversed, because the polynomial is constant.
 		def xor_P(dataBit, queryBit, bitNr):
-			if (self.__P >> bitNr) & 1:
+			if (self._P >> bitNr) & 1:
 				return XOR(dataBit, queryBit)
 			return dataBit
 
 		# Helper function to optimize the algorithm.
 		# This removes unnecessary operations.
 		def optimize(word, sort=False):
-			if self.__optimize & self.OPT_FLATTEN:
+			if self._optimize & self.OPT_FLATTEN:
 				word.flatten()
-			if self.__optimize & self.OPT_ELIMINATE:
-				word.optimize(sortLex=(sort and (self.__optimize & self.OPT_LEX)))
+			if self._optimize & self.OPT_ELIMINATE:
+				word.optimize(sortLex=(sort and (self._optimize & self.OPT_LEX)))
 			return word
 
 		# Run the shift register for each input data bit.
 		word = inCrc
-		if self.__shiftRight:
+		if self._shiftRight:
 			for i in range(nrDataBits):
 				# Run the shift register once.
 				bits = []
@@ -275,13 +274,13 @@ NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE
 USE OR PERFORMANCE OF THIS SOFTWARE."""
 
 	def __algDescription(self):
-		pstr = int2poly(self.__P, self.__nrCrcBits, self.__shiftRight)
-		shift = "right (little endian)" if self.__shiftRight else "left (big endian)"
+		pstr = int2poly(self._P, self._nrCrcBits, self._shiftRight)
+		shift = "right (little endian)" if self._shiftRight else "left (big endian)"
 		return (f"CRC polynomial coefficients: {pstr}\n"
-			f"                             0x{self.__P:X} (hex)\n"
-			f"CRC width:                   {self.__nrCrcBits} bits\n"
+			f"                             0x{self._P:X} (hex)\n"
+			f"CRC width:                   {self._nrCrcBits} bits\n"
 			f"CRC shift direction:         {shift}\n"
-			f"Input word width:            {self.__nrDataBits} bits\n")
+			f"Input word width:            {self._nrDataBits} bits\n")
 
 	def genPython(self,
 		      funcName="crc",
@@ -330,16 +329,16 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 		ret.extend("// " + l for l in self.__algDescription().splitlines())
 		ret.append("")
 		if genFunction:
-			ret.append(f"function automatic [{self.__nrCrcBits - 1}:0] {name};")
+			ret.append(f"function automatic [{self._nrCrcBits - 1}:0] {name};")
 		else:
 			ret.append(f"module {name} (")
 		end = ";" if genFunction else ","
-		ret.append(f"    input [{self.__nrCrcBits - 1}:0] {inCrcName}{end}")
-		ret.append(f"    input [{self.__nrDataBits - 1}:0] {inDataName}{end}")
+		ret.append(f"    input [{self._nrCrcBits - 1}:0] {inCrcName}{end}")
+		ret.append(f"    input [{self._nrDataBits - 1}:0] {inDataName}{end}")
 		if genFunction:
 			ret.append("begin")
 		else:
-			ret.append(f"    output [{self.__nrCrcBits - 1}:0] {outCrcName}")
+			ret.append(f"    output [{self._nrCrcBits - 1}:0] {outCrcName}")
 			ret.append(");")
 		for i, bit in enumerate(word):
 			assign = "" if genFunction else "assign "
@@ -372,9 +371,9 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 		ret.append(f"")
 		ret.append(f"entity {name} is")
 		ret.append(f"    port (")
-		ret.append(f"        {inCrcName}: in std_logic_vector({self.__nrCrcBits - 1} downto 0);")
-		ret.append(f"        {inDataName}: in std_logic_vector({self.__nrDataBits - 1} downto 0);")
-		ret.append(f"        {outCrcName}: out std_logic_vector({self.__nrCrcBits - 1} downto 0)")
+		ret.append(f"        {inCrcName}: in std_logic_vector({self._nrCrcBits - 1} downto 0);")
+		ret.append(f"        {inDataName}: in std_logic_vector({self._nrDataBits - 1} downto 0);")
+		ret.append(f"        {outCrcName}: out std_logic_vector({self._nrCrcBits - 1} downto 0)")
 		ret.append(f"    );")
 		ret.append(f"end entity {name};")
 		ret.append(f"")
@@ -410,9 +409,9 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 		ret.append("")
 		ret.append("if __name__ == '__main__':")
 		ret.append(f"    instance = {blockName}(")
-		ret.append(f"        {inCrcName}=Signal(intbv(0)[{self.__nrCrcBits}:]),")
-		ret.append(f"        {inDataName}=Signal(intbv(0)[{self.__nrDataBits}:]),")
-		ret.append(f"        {outCrcName}=Signal(intbv(0)[{self.__nrCrcBits}:])")
+		ret.append(f"        {inCrcName}=Signal(intbv(0)[{self._nrCrcBits}:]),")
+		ret.append(f"        {inDataName}=Signal(intbv(0)[{self._nrDataBits}:]),")
+		ret.append(f"        {outCrcName}=Signal(intbv(0)[{self._nrCrcBits}:])")
 		ret.append(f"    )")
 		ret.append(f"    instance.convert(hdl='Verilog')")
 		ret.append(f"    instance.convert(hdl='VHDL')")
@@ -442,8 +441,8 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 						  "bigger than 64 bit "
 						  "are not supported.")
 			return f"uint{cBits}_t"
-		cCrcType = makeCType(self.__nrCrcBits, "CRC")
-		cDataType = makeCType(self.__nrDataBits, "Input data")
+		cCrcType = makeCType(self._nrCrcBits, "CRC")
+		cDataType = makeCType(self._nrDataBits, "Input data")
 		ret = []
 		ret.append("// vim: ts=4 sw=4 expandtab")
 		ret.append("")
@@ -483,83 +482,6 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 			ret.append("")
 			ret.append(f"#endif /* {funcName.upper()}_H_ */")
 		return "\n".join(ret)
-
-	def runTests(self, name=None, extra=None):
-		tmpdir = None
-		try:
-			import random
-			rng = random.Random()
-			rng.seed(424242)
-
-			print(f"Testing{(' ' + name) if name else ''} "
-			      f"P=0x{self.__P:X}, "
-			      f"nrCrcBits={self.__nrCrcBits}, "
-			      f"shiftRight={int(bool(self.__shiftRight))}, "
-			      f"nrDataBits={self.__nrDataBits}"
-			      f"{(', ' + extra) if extra else ''} ...")
-
-			# Generate the CRC function as Python code.
-			pyCode = self.genPython(funcName="crc_pyimpl")
-			execEnv = {}
-			exec(pyCode, execEnv)
-			crc_pyimpl = execEnv["crc_pyimpl"]
-
-			# Generate the CRC function as C code.
-			import os, time, importlib, shutil
-			from cffi import FFI
-			ffibuilder = FFI()
-			ffibuilder.set_source("testmod_crcgen", self.genC())
-			ffibuilder.cdef(self.genC(declOnly=True,
-						  includeGuards=False,
-						  includes=False))
-			tmpdir = f"tmp_{os.getpid()}_{int(time.time() * 1e6)}"
-			ffibuilder.compile(tmpdir=tmpdir, verbose=False)
-			testmod_crcgen = importlib.import_module(tmpdir + ".testmod_crcgen")
-			crc_cimpl = testmod_crcgen.lib.crc
-
-			# Compare the reference implementation to the Python and C code.
-			crcMask = (1 << self.__nrCrcBits) - 1
-			dataMask = (1 << self.__nrDataBits) - 1
-			for i in range(32):
-				if i == 0:
-					crc = 0
-				elif i == 1:
-					crc = crcMask
-				else:
-					crc = rng.randint(1, crcMask - 1)
-				for j in range(min(64, dataMask + 1)):
-					if j == 0:
-						data = 0
-					elif j == 1:
-						data = dataMask
-					else:
-						data = rng.randint(1, dataMask - 1)
-					for k in range(3):
-						ref = CrcReference.crc(
-							crc=crc,
-							data=data,
-							polynomial=self.__P,
-							nrCrcBits=self.__nrCrcBits,
-							nrDataBits=self.__nrDataBits,
-							shiftRight=self.__shiftRight)
-						py = crc_pyimpl(crc, data)
-						c = crc_cimpl(crc, data)
-						if ref != py or ref != c:
-							raise CrcGenError(
-								f"Test failed: "
-								f"P=0x{self.__P:X}, "
-								f"nrCrcBits={self.__nrCrcBits}, "
-								f"shiftRight={int(bool(self.__shiftRight))}, "
-								f"nrDataBits={self.__nrDataBits}, "
-								f"data=0x{data:X}, "
-								f"ref=0x{ref:X}, "
-								f"py=0x{py:X}, "
-								f"c=0x{c:X}")
-						crc = ref
-						data = (data + 1) & dataMask
-		finally:
-			if tmpdir:
-				shutil.rmtree(tmpdir, ignore_errors=True)
 
 def poly2int(polyString, nrBits, shiftRight=False):
 	"""Convert polynomial coefficient string to binary integer.
