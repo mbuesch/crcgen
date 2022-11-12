@@ -1,7 +1,17 @@
-CRC algorithm code generator
-============================
+CRC algorithm HDL code generator (VHDL, Verilog, MyHDL)
+=======================================================
 
-This tool generates synthesizable Verilog, VHDL or MyHDL code for use in FPGAs to calculate CRC (Cyclic Redundancy Check) checksums.
+`Homepage <https://bues.ch/h/crcgen>`_
+
+`Git repository <https://bues.ch/cgit/crcgen.git>`_
+
+`Github repository <https://github.com/mbuesch/crcgen>`_
+
+This tool generates VHDL, Verilog or MyHDL code for use in FPGAs to calculate CRC (Cyclic Redundancy Check) checksums.
+
+The generated HDL code is synthesizable and combinatorial. That means the calculation runs in one clock cycle on an FPGA.
+
+Any combination of CRC algorithm parameters and polynomial coefficients can be selected.
 
 
 Example usage
@@ -35,10 +45,18 @@ Generate Verilog code for a custom non-standard CRC or any standard algorithm th
 	crcgen -P "x^8 + x^7 + x^5 + x^4 + x^2 + x + 1" -B16 -R -v
 
 
+Online crcgen
+=============
+
+An easy to use online version of crcgen that can be used without installing or downloading anything to your machine is available here:
+
+`Online crcgen <https://bues.ch/h/crcgen>`_
+
+
 License
 =======
 
-Copyright (c) 2019-2021 Michael Buesch <m@bues.ch>
+Copyright (c) 2019-2022 Michael Buesch <m@bues.ch>
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
 
