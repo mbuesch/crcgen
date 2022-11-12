@@ -14,7 +14,7 @@ with open(os.path.join(basedir, "README.rst"), "rb") as fd:
 
 setup(	name		= "crcgen",
 	version		= VERSION_STRING,
-	description	= "CRC algorithm code generator",
+	description	= "CRC algorithm HDL code generator (VHDL, Verilog, MyHDL)",
 	license		= "GNU General Public License v2 or later",
 	author		= "Michael Buesch",
 	author_email	= "m@bues.ch",
