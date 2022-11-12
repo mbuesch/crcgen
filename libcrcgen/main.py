@@ -2,7 +2,7 @@
 #
 #   CRC code generator
 #
-#   Copyright (c) 2019-2021 Michael Buesch <m@bues.ch>
+#   Copyright (c) 2019-2022 Michael Buesch <m@bues.ch>
 #
 #   This program is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -43,7 +43,7 @@ def main():
 		g.add_argument("-p", "--python", action="store_true", help="Generate Python code")
 		g.add_argument("-c", "--c", action="store_true", help="Generate C code")
 		g.add_argument("-T", "--polynomial-convert", type=str, help="Convert a polynomial from string to int or vice versa.")
-		g.add_argument("-t", "--test", action="store_true", help="Run unit tests for the specified algorithm")
+		g.add_argument("--test", action="store_true", help=argparse.SUPPRESS)
 		p.add_argument("-a", "--algorithm", type=str,
 			       choices=CRC_PARAMETERS.keys(), default="CRC-32",
 			       help="Select the CRC algorithm. "
