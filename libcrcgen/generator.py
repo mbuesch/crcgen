@@ -192,6 +192,7 @@ class CrcGen(object):
 	def __gen(self, dataVarName, crcVarName):
 		nrCrcBits = self._nrCrcBits
 		nrDataBits = self._nrDataBits
+		P = self._P
 		if nrCrcBits < 1 or nrDataBits < 1:
 			raise CrcGenError("Invalid number of bits.")
 
@@ -211,7 +212,7 @@ class CrcGen(object):
 		# if the decision bit 'queryBit' is set.
 		# This is done reversed, because the polynomial is constant.
 		def xor_P(dataBit, queryBit, bitNr):
-			if (self._P >> bitNr) & 1:
+			if (P >> bitNr) & 1:
 				return XOR(dataBit, queryBit)
 			return dataBit
 
