@@ -4,7 +4,7 @@ import sys, os
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 from libcrcgen.version import VERSION_STRING
-from distutils.core import setup
+from setuptools import setup
 import warnings
 
 warnings.filterwarnings("ignore", r".*'long_description_content_type'.*")
