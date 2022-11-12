@@ -36,30 +36,49 @@ def main():
 			return int(string)
 		p = argparse.ArgumentParser()
 		g = p.add_mutually_exclusive_group(required=True)
-		g.add_argument("-v", "--verilog-function", action="store_true", help="Generate Verilog function")
-		g.add_argument("-m", "--verilog-module", action="store_true", help="Generate Verilog module")
-		g.add_argument("-V", "--vhdl", action="store_true", help="Generate VHDL module")
-		g.add_argument("-M", "--myhdl", action="store_true", help="Generate MyHDL block")
-		g.add_argument("-p", "--python", action="store_true", help="Generate Python code")
-		g.add_argument("-c", "--c", action="store_true", help="Generate C code")
-		g.add_argument("-T", "--polynomial-convert", type=str, help="Convert a polynomial from string to int or vice versa.")
-		g.add_argument("--test", action="store_true", help=argparse.SUPPRESS)
+		g.add_argument("-v", "--verilog-function", action="store_true",
+			       help="Generate Verilog function")
+		g.add_argument("-m", "--verilog-module", action="store_true",
+			       help="Generate Verilog module")
+		g.add_argument("-V", "--vhdl", action="store_true",
+			       help="Generate VHDL module")
+		g.add_argument("-M", "--myhdl", action="store_true",
+			       help="Generate MyHDL block")
+		g.add_argument("-p", "--python", action="store_true",
+			       help="Generate Python code (mainly useful for testing purposes)")
+		g.add_argument("-c", "--c", action="store_true",
+			       help="Generate C code (mainly useful for testing purposes)")
+		g.add_argument("-T", "--polynomial-convert", metavar="POLYNOMIAL", type=str,
+			       help="Convert a polynomial from string to int or vice versa and then exit.")
+		g.add_argument("--test", action="store_true",
+			       help=argparse.SUPPRESS)
 		p.add_argument("-a", "--algorithm", type=str,
 			       choices=CRC_PARAMETERS.keys(), default="CRC-32",
 			       help="Select the CRC algorithm. "
 				    "Individual algorithm parameters (e.g. polynomial) can be overridden with the options below.")
-		p.add_argument("-P", "--polynomial", type=str, help="CRC polynomial")
-		p.add_argument("-B", "--nr-crc-bits", type=argInt, help="Number of CRC bits.")
-		p.add_argument("-b", "--nr-data-bits", type=argInt, default="8", help="Number of input data word bits.")
+		p.add_argument("-P", "--polynomial", type=str,
+			       help="Use this CRC polynomial for code generation")
+		p.add_argument("-B", "--nr-crc-bits", type=argInt,
+			       help="Number of CRC bits.")
+		p.add_argument("-b", "--nr-data-bits", type=argInt, default="8",
+			       help="Number of input data word bits.")
 		g = p.add_mutually_exclusive_group()
-		g.add_argument("-R", "--shift-right", action="store_true", help="CRC algorithm shift direction: right shift")
-		g.add_argument("-L", "--shift-left", action="store_true", help="CRC algorithm shift direction: left shift")
-		p.add_argument("-n", "--name", type=str, default="crc", help="Generated function/module name")
-		p.add_argument("-D", "--data-param", type=str, default="data", help="Generated function/module data parameter name")
-		p.add_argument("-C", "--crc-in-param", type=str, default="crcIn", help="Generated function/module crc input parameter name")
-		p.add_argument("-o", "--crc-out-param", type=str, default="crcOut", help="Generated module crc output parameter name")
-		p.add_argument("-S", "--static", action="store_true", help="Generate static C function")
-		p.add_argument("-I", "--inline", action="store_true", help="Generate inline C function")
+		g.add_argument("-R", "--shift-right", action="store_true",
+			       help="CRC algorithm shift direction: right shift")
+		g.add_argument("-L", "--shift-left", action="store_true",
+			       help="CRC algorithm shift direction: left shift")
+		p.add_argument("-n", "--name", type=str, default="crc",
+			       help="Generated function/module name")
+		p.add_argument("-D", "--data-param", type=str, default="data",
+			       help="Generated function/module data parameter name")
+		p.add_argument("-C", "--crc-in-param", type=str, default="crcIn",
+			       help="Generated function/module crc input parameter name")
+		p.add_argument("-o", "--crc-out-param", type=str, default="crcOut",
+			       help="Generated module crc output parameter name")
+		p.add_argument("-S", "--static", action="store_true",
+			       help="Generate static C function. (only if -c)")
+		p.add_argument("-I", "--inline", action="store_true",
+			       help="Generate inline C function. (only if -c)")
 		p.add_argument("-O", "--optimize", type=argInt, default=CrcGen.OPT_ALL,
 			       help=f"Select individual algorithm optimizer steps. "
 				    f"The argument to the -O option can be any sum of the following integers: "
