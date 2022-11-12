@@ -2,7 +2,7 @@
 #
 #   CRC code generator
 #
-#   Copyright (c) 2019-2021 Michael Buesch <m@bues.ch>
+#   Copyright (c) 2019-2022 Michael Buesch <m@bues.ch>
 #
 #   This program is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -27,6 +27,6 @@ __all__ = [
 ]
 
 VERSION_MAJOR = 2
-VERSION_MINOR = 2
+VERSION_MINOR = 3
 VERSION_EXTRA = ""
 VERSION_STRING = "%d.%d%s" % (VERSION_MAJOR, VERSION_MINOR, VERSION_EXTRA)
