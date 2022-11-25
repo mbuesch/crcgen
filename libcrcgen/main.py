@@ -112,10 +112,10 @@ def main():
 		if args.shift_left:
 			crcParameters["shiftRight"] = False
 		if args.polynomial is not None:
-			polynomial = poly2int(args.polynomial,
-					      crcParameters["nrBits"],
-					      crcParameters["shiftRight"])
-			crcParameters["polynomial"] = polynomial
+			crcParameters["polynomial"] = poly2int(
+				args.polynomial,
+				crcParameters["nrBits"],
+				crcParameters["shiftRight"])
 
 		polynomial = crcParameters["polynomial"]
 		nrCrcBits = crcParameters["nrBits"]
@@ -172,6 +172,8 @@ def main():
 					       dataVarName=args.data_param,
 					       static=args.static,
 					       inline=args.inline))
+			else:
+				assert False
 		return 0
 	except CrcGenError as e:
 		print("ERROR: " + str(e), file=sys.stderr)
