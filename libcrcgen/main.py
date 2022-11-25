@@ -98,18 +98,10 @@ def main():
 		if args.polynomial_convert is not None:
 			if args.nr_crc_bits is None:
 				raise CrcGenError("-B|--nr-crc-bits is required for -T|--polynomial-convert")
-			try:
-				if "^" in args.polynomial_convert.lower():
-					p = poly2int(args.polynomial_convert,
-						     args.nr_crc_bits,
-						     args.shift_right)
-					print(f"0x{p:X}")
-				else:
-					print(int2poly(int(args.polynomial_convert, 0),
-						       args.nr_crc_bits,
-						       args.shift_right))
-			except ValueError as e:
-				raise CrcGenError("-T|--polynomial-convert error: " + str(e))
+			p = poly2int(args.polynomial_convert,
+				     args.nr_crc_bits,
+				     args.shift_right)
+			print(f"0x{p:X}")
 			return 0
 
 		crcParameters = CRC_PARAMETERS[args.algorithm].copy()
@@ -120,15 +112,9 @@ def main():
 		if args.shift_left:
 			crcParameters["shiftRight"] = False
 		if args.polynomial is not None:
-			try:
-				if "^" in args.polynomial:
-					polynomial = poly2int(args.polynomial,
-							      crcParameters["nrBits"],
-							      crcParameters["shiftRight"])
-				else:
-					polynomial = argInt(args.polynomial)
-			except ValueError as e:
-				raise CrcGenError("Polynomial error: " + str(e))
+			polynomial = poly2int(args.polynomial,
+					      crcParameters["nrBits"],
+					      crcParameters["shiftRight"])
 			crcParameters["polynomial"] = polynomial
 
 		polynomial = crcParameters["polynomial"]

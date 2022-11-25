@@ -487,19 +487,31 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 def poly2int(polyString, nrBits, shiftRight=False):
 	"""Convert polynomial coefficient string to binary integer.
 	"""
-	polyString, _ = re.subn(r"\s+", "", polyString)
-	poly = 0
-	try:
-		for bit in polyString.split("+"):
-			bit = bit.lower()
-			if bit.startswith("x^"):
-				poly |= 1 << int(bit[2:])
-			elif bit == "x":
-				poly |= 1 << 1
-			else:
-				poly |= int(bit)
-	except ValueError:
-		raise ValueError("Invalid polynomial coefficient format.")
+	polyString = polyString.lower().strip();
+	if polyString.startswith("0x"):
+		# Hex format
+		try:
+			poly = int(polyString[2:], 16)
+		except ValueError:
+			raise ValueError("Invalid polynomial coefficient format.")
+	else:
+		try:
+			# Decimal format
+			poly = int(polyString, 10)
+		except ValueError:
+			# Polynomial coefficient format
+			polyString, _ = re.subn(r"\s+", "", polyString)
+			poly = 0
+			try:
+				for bit in polyString.split("+"):
+					if bit.startswith("x^"):
+						poly |= 1 << int(bit[2:])
+					elif bit == "x":
+						poly |= 1 << 1
+					else:
+						poly |= int(bit)
+			except ValueError:
+				raise ValueError("Invalid polynomial coefficient format.")
 	poly &= (1 << nrBits) - 1
 	if shiftRight:
 		poly = bitreverse(poly, nrBits)
