@@ -56,7 +56,7 @@ An easy to use online version of crcgen that can be used without installing or d
 License of the generated HDL code
 =================================
 
-This generated code is Public Domain.
+The generated code is Public Domain.
 
 Permission to use, copy, modify, and/or distribute this software for any
 purpose with or without fee is hereby granted.
