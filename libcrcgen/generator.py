@@ -20,14 +20,11 @@
 #
 
 from dataclasses import dataclass
-from libcrcgen.util import *
-import re
+from libcrcgen.util import int2poly
 
 __all__ = [
 	"CrcGen",
 	"CrcGenError",
-	"int2poly",
-	"poly2int",
 ]
 
 @dataclass(frozen=True)
@@ -483,59 +480,3 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 			ret.append("")
 			ret.append(f"#endif /* {funcName.upper()}_H_ */")
 		return "\n".join(ret)
-
-def poly2int(polyString, nrBits, shiftRight=False):
-	"""Convert polynomial coefficient string to binary integer.
-	"""
-	polyString = polyString.lower().strip();
-	if polyString.startswith("0x"):
-		# Hex format
-		try:
-			poly = int(polyString[2:], 16)
-		except ValueError:
-			raise ValueError("Invalid polynomial coefficient format.")
-	else:
-		try:
-			# Decimal format
-			poly = int(polyString, 10)
-		except ValueError:
-			# Polynomial coefficient format
-			polyString, _ = re.subn(r"\s+", "", polyString)
-			poly = 0
-			try:
-				for bit in polyString.split("+"):
-					if bit.startswith("x^"):
-						poly |= 1 << int(bit[2:], 10)
-					elif bit == "x":
-						poly |= 1 << 1
-					elif bit == "1":
-						poly |= 1 << 0
-					else:
-						raise ValueError
-			except ValueError:
-				raise ValueError("Invalid polynomial coefficient format.")
-	poly &= (1 << nrBits) - 1
-	if shiftRight:
-		poly = bitreverse(poly, nrBits)
-	return poly
-
-def int2poly(poly, nrBits, shiftRight=False):
-	"""Convert binary integer polynomial coefficient to string.
-	"""
-	poly &= (1 << nrBits) - 1
-	if shiftRight:
-		poly = bitreverse(poly, nrBits)
-	p = []
-	shift = 0
-	while poly:
-		if poly & 1:
-			if shift == 0:
-				p.append("1")
-			elif shift == 1:
-				p.append("x")
-			else:
-				p.append(f"x^{shift}")
-		shift += 1
-		poly >>= 1
-	p.append(f"x^{nrBits}")
-	return " + ".join(reversed(p))

@@ -19,7 +19,7 @@
 #   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from libcrcgen import *
+from libcrcgen import CrcGen, CrcGenError, CRC_PARAMETERS, poly2int
 
 import sys
 import argparse
