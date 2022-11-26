@@ -505,11 +505,13 @@ def poly2int(polyString, nrBits, shiftRight=False):
 			try:
 				for bit in polyString.split("+"):
 					if bit.startswith("x^"):
-						poly |= 1 << int(bit[2:])
+						poly |= 1 << int(bit[2:], 10)
 					elif bit == "x":
 						poly |= 1 << 1
+					elif bit == "1":
+						poly |= 1 << 0
 					else:
-						poly |= int(bit)
+						raise ValueError
 			except ValueError:
 				raise ValueError("Invalid polynomial coefficient format.")
 	poly &= (1 << nrBits) - 1
