@@ -310,6 +310,15 @@ if __name__ == "__main__":
 			(0x07,
 			 "x^8 + x^2 + x + 1",
 			 8, False),
+			(0x03,
+			 "x^3 + x + 1",
+			 3, False),
+			(0x01,
+			 "x^3 + 1",
+			 3, False),
+			(0x02,
+			 "x^3 + x",
+			 3, False),
 		):
 		print("Testing %s..." % polyString)
 		if poly2int(polyString, nrBits, shiftRight) != poly:
