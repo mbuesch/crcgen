@@ -34,7 +34,9 @@ def main():
 			if string.startswith("0x"):
 				return int(string[2:], 16)
 			return int(string)
-		p = argparse.ArgumentParser()
+		p = argparse.ArgumentParser(
+			description="CRC algorithm HDL code generator (VHDL, Verilog, MyHDL)"
+		)
 		g = p.add_mutually_exclusive_group(required=True)
 		g.add_argument("-v", "--verilog-function", action="store_true",
 			       help="Generate Verilog function")
