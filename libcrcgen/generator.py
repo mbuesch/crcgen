@@ -81,21 +81,25 @@ class ConstBit(AbstractBit):
 		return "1" if self.value else "0"
 
 class XOR:
+	__slots__ = (
+		"__items",
+	)
+
 	def __init__(self, *items):
-		self.items = items
+		self.__items = items
 
 	def flatten(self):
 		newItems = [ item
-			     for subItem in self.items
+			     for subItem in self.__items
 			     for item in subItem.flatten() ]
-		self.items = newItems
+		self.__items = newItems
 		return newItems
 
 	def optimize(self, sortLex):
 		newItems = []
 		haveBits = {}
 		constOnes = []
-		for item in self.items:
+		for item in self.__items:
 			if isinstance(item, Bit):
 				# Store bit for even/uneven count analysis.
 				haveBits[item] = haveBits.get(item, 0) + 1
@@ -120,7 +124,7 @@ class XOR:
 			# All items have been optimized out.
 			# This term shall be zero.
 			newItems.append(ConstBit(0))
-		self.items = newItems
+		self.__items = newItems
 
 	def gen_python(self, level=0):
 		return self.__gen("(", ")", level, " ^ ", lambda item: item.gen_python(level + 1))
@@ -138,28 +142,32 @@ class XOR:
 		return self.__gen("(", ")", level, " ^ ", lambda item: item.gen_myhdl(level + 1))
 
 	def __gen(self, prefix, suffix, level, oper, itemGen):
-		assert(self.items)
+		assert self.__items, "Empty XOR."
 		if level == 0:
 			prefix = suffix = ""
-		return prefix + (oper.join(itemGen(item) for item in self.items)) + suffix
+		return prefix + (oper.join(itemGen(item) for item in self.__items)) + suffix
 
 	def sortKey(self):
-		return "__".join(item.sortKey() for item in self.items)
+		return "__".join(item.sortKey() for item in self.__items)
 
 class Word:
+	__slots__ = (
+		"__items",
+	)
+
 	def __init__(self, *items):
 		# items must be LSB first.
-		self.items = list(items)
+		self.__items = list(items)
 
 	def __getitem__(self, index):
-		return self.items[index]
+		return self.__items[index]
 
 	def flatten(self):
-		for item in self.items:
+		for item in self.__items:
 			item.flatten()
 
 	def optimize(self, sortLex):
-		for item in self.items:
+		for item in self.__items:
 			item.optimize(sortLex)
 
 class CrcGenError(Exception):
