@@ -1,22 +1,20 @@
 #!/usr/bin/env python3
 
-import sys, os
+import os
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 from libcrcgen.version import VERSION_STRING
 from setuptools import setup
-import warnings
-
-warnings.filterwarnings("ignore", r".*'long_description_content_type'.*")
 
 with open(os.path.join(basedir, "README.rst"), "rb") as fd:
 	readmeText = fd.read().decode("UTF-8")
 
-setup(	name		= "crcgen",
+setup(
+	name		= "crcgen",
 	version		= VERSION_STRING,
 	description	= "CRC algorithm HDL code generator (VHDL, Verilog, MyHDL)",
 	license		= "GNU General Public License v2 or later",
-	author		= "Michael Buesch",
+	author		= "Michael Büsch",
 	author_email	= "m@bues.ch",
 	url		= "https://bues.ch/h/crcgen",
 	scripts		= [
@@ -48,3 +46,5 @@ setup(	name		= "crcgen",
 	long_description=readmeText,
 	long_description_content_type="text/x-rst",
 )
+
+# vim: ts=8 sw=8 noexpandtab
