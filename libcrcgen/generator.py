@@ -40,19 +40,19 @@ class Bit(AbstractBit):
 	name: str
 	index: int
 
-	def gen_python(self):
+	def gen_python(self, level=0):
 		return f"{self.name}[{self.index}]"
 
-	def gen_c(self):
+	def gen_c(self, level=0):
 		return f"b({self.name}, {self.index})"
 
-	def gen_verilog(self):
+	def gen_verilog(self, level=0):
 		return f"{self.name}[{self.index}]"
 
-	def gen_vhdl(self):
+	def gen_vhdl(self, level=0):
 		return f"{self.name}({self.index})"
 
-	def gen_myhdl(self):
+	def gen_myhdl(self, level=0):
 		return f"{self.name}[{self.index}]"
 
 	def sortKey(self):
@@ -62,19 +62,19 @@ class Bit(AbstractBit):
 class ConstBit(AbstractBit):
 	value: int
 
-	def gen_python(self):
+	def gen_python(self, level=0):
 		return "1" if self.value else "0"
 
-	def gen_c(self):
+	def gen_c(self, level=0):
 		return "1u" if self.value else "0u"
 
-	def gen_verilog(self):
+	def gen_verilog(self, level=0):
 		return "1'b1" if self.value else "1'b0"
 
-	def gen_vhdl(self):
+	def gen_vhdl(self, level=0):
 		return 'b"1"' if self.value else 'b"0"'
 
-	def gen_myhdl(self):
+	def gen_myhdl(self, level=0):
 		return "1" if self.value else "0"
 
 	def sortKey(self):
@@ -122,23 +122,25 @@ class XOR(object):
 			newItems.append(ConstBit(0))
 		self.items = newItems
 
-	def gen_python(self):
-		return self.__gen("(", ")", " ^ ", lambda item: item.gen_python())
+	def gen_python(self, level=0):
+		return self.__gen("(", ")", level, " ^ ", lambda item: item.gen_python(level + 1))
 
-	def gen_c(self):
-		return self.__gen("(", ")", " ^ ", lambda item: item.gen_c())
+	def gen_c(self, level=0):
+		return self.__gen("(", ")", level, " ^ ", lambda item: item.gen_c(level + 1))
 
-	def gen_verilog(self):
-		return self.__gen("(", ")", " ^ ", lambda item: item.gen_verilog())
+	def gen_verilog(self, level=0):
+		return self.__gen("(", ")", level, " ^ ", lambda item: item.gen_verilog(level + 1))
 
-	def gen_vhdl(self):
-		return self.__gen("(", ")", " xor ", lambda item: item.gen_vhdl())
+	def gen_vhdl(self, level=0):
+		return self.__gen("(", ")", level, " xor ", lambda item: item.gen_vhdl(level + 1))
 
-	def gen_myhdl(self):
-		return self.__gen("(", ")", " ^ ", lambda item: item.gen_myhdl())
+	def gen_myhdl(self, level=0):
+		return self.__gen("(", ")", level, " ^ ", lambda item: item.gen_myhdl(level + 1))
 
-	def __gen(self, prefix, suffix, oper, itemGen):
+	def __gen(self, prefix, suffix, level, oper, itemGen):
 		assert(self.items)
+		if level == 0:
+			prefix = suffix = ""
 		return prefix + (oper.join(itemGen(item) for item in self.items)) + suffix
 
 	def sortKey(self):
@@ -472,7 +474,7 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 			ret.append(f"    {cCrcType} ret;")
 			for i, bit in enumerate(word):
 				operator = "|=" if i > 0 else " ="
-				ret.append(f"    ret {operator} ({cCrcType}){bit.gen_c()} << {i};")
+				ret.append(f"    ret {operator} ({cCrcType})({bit.gen_c()}) << {i};")
 			ret.append("    return ret;")
 			ret.append("}")
 			ret.append("#undef b")
