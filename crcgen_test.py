@@ -2,7 +2,7 @@
 #
 #  Test of CRC generator.
 #
-#   Copyright (C) 2020-2022 Michael Buesch <m@bues.ch>
+#   Copyright (C) 2020-2023 Michael Büsch <m@bues.ch>
 #
 #  Some CRC implementations are derived from AVR-libc.
 #  These copyright notices apply to the AVR-libc parts:

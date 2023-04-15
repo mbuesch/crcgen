@@ -2,7 +2,7 @@
 #
 #   CRC code generator
 #
-#   Copyright (c) 2019-2022 Michael Buesch <m@bues.ch>
+#   Copyright (c) 2019-2023 Michael Büsch <m@bues.ch>
 #
 #   This program is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
