@@ -28,7 +28,7 @@ __all__ = [
 ]
 
 @dataclass(frozen=True)
-class AbstractBit(object):
+class AbstractBit:
 	def flatten(self):
 		return [self, ]
 
@@ -80,7 +80,7 @@ class ConstBit(AbstractBit):
 	def sortKey(self):
 		return "1" if self.value else "0"
 
-class XOR(object):
+class XOR:
 	def __init__(self, *items):
 		self.items = items
 
@@ -146,7 +146,7 @@ class XOR(object):
 	def sortKey(self):
 		return "__".join(item.sortKey() for item in self.items)
 
-class Word(object):
+class Word:
 	def __init__(self, *items):
 		# items must be LSB first.
 		self.items = list(items)
@@ -165,7 +165,7 @@ class Word(object):
 class CrcGenError(Exception):
 	pass
 
-class CrcGen(object):
+class CrcGen:
 	"""Combinatorial CRC algorithm generator.
 	"""
 

@@ -25,7 +25,7 @@ __all__ = [
 
 from typing import Iterable
 
-class CrcReference(object):
+class CrcReference:
 	"""Generic CRC reference implementation.
 	"""
 
