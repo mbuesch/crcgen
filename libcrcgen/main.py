@@ -19,7 +19,7 @@
 #   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from libcrcgen import CrcGen, CrcGenError, CRC_PARAMETERS, poly2int
+from libcrcgen import CrcGen, CrcGenError, CRC_PARAMETERS, poly2int, int2poly
 
 import sys
 import argparse
@@ -27,6 +27,37 @@ import argparse
 __all__ = [
 	"main",
 ]
+
+def poly_convert(p, nr_crc_bits, shift_right):
+	if nr_crc_bits is None:
+		raise CrcGenError("-B|--nr-crc-bits is required for -T|--polynomial-convert")
+	p = p.strip()
+	try:
+		# Hex format
+		if not p.startswith("0x"):
+			raise ValueError
+		p = int(p[2:], 16)
+		p = int2poly(p, nr_crc_bits, shift_right)
+		print(p)
+		return 0
+	except ValueError:
+		pass
+	try:
+		# Decimal format
+		p = int(p, 10)
+		p = int2poly(p, nr_crc_bits, shift_right)
+		print(p)
+		return 0
+	except ValueError:
+		pass
+	try:
+		# Polynomial coefficient format
+		p = poly2int(p, nr_crc_bits, shift_right)
+		print(f"0x{p:X}")
+		return 0
+	except ValueError:
+		pass
+	raise CrcGenError("-T|--polynomial-convert: Invalid polynomial")
 
 def main():
 	try:
@@ -98,13 +129,9 @@ def main():
 			raise CrcGenError("Invalid -b|--nr-data-bits argument.")
 
 		if args.polynomial_convert is not None:
-			if args.nr_crc_bits is None:
-				raise CrcGenError("-B|--nr-crc-bits is required for -T|--polynomial-convert")
-			p = poly2int(args.polynomial_convert,
-				     args.nr_crc_bits,
-				     args.shift_right)
-			print(f"0x{p:X}")
-			return 0
+			return poly_convert(args.polynomial_convert,
+					    args.nr_crc_bits,
+					    args.shift_right)
 
 		crcParameters = CRC_PARAMETERS[args.algorithm].copy()
 		if args.nr_crc_bits is not None:
