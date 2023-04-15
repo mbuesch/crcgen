@@ -17,6 +17,7 @@ setup(
 	author		= "Michael Büsch",
 	author_email	= "m@bues.ch",
 	url		= "https://bues.ch/h/crcgen",
+	python_requires = ">=3.7",
 	scripts		= [
 		"crcgen",
 	],
