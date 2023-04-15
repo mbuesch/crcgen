@@ -307,7 +307,7 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 		ret.append(f"        def __init__(self, x):")
 		ret.append(f"            self.x = x")
 		ret.append(f"        def __getitem__(self, i):")
-		ret.append(f"            return ((self.x >> i) & 1)")
+		ret.append(f"            return (self.x >> i) & 1")
 		ret.append(f"        def __setitem__(self, i, x):")
 		ret.append(f"            self.x = (self.x | (1 << i)) if x else (self.x & ~(1 << i))")
 		ret.append(f"    {crcVarName} = bitwrapper({crcVarName})")
