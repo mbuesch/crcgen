@@ -412,7 +412,7 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 		ret.append("    @always_comb")
 		ret.append("    def logic():")
 		for i, bit in enumerate(word):
-			ret.append(f"        {outCrcName}[{i}].next = {bit.gen_myhdl()}")
+			ret.append(f"        {outCrcName}.next[{i}] = {bit.gen_myhdl()}")
 		ret.append("    return logic")
 		ret.append("")
 		ret.append("if __name__ == '__main__':")
