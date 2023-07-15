@@ -27,13 +27,16 @@ __all__ = [
 	"CrcGenError",
 ]
 
+
 @dataclass(frozen=True)
 class AbstractBit:
+
 	def flatten(self):
 		return [self, ]
 
 	def optimize(self, sortLex):
 		pass
+
 
 @dataclass(frozen=True)
 class Bit(AbstractBit):
@@ -58,6 +61,7 @@ class Bit(AbstractBit):
 	def sortKey(self):
 		return f"{self.name}_{self.index:07}"
 
+
 @dataclass(frozen=True)
 class ConstBit(AbstractBit):
 	value: int
@@ -79,6 +83,7 @@ class ConstBit(AbstractBit):
 
 	def sortKey(self):
 		return "1" if self.value else "0"
+
 
 class XOR:
 	__slots__ = (
@@ -150,6 +155,7 @@ class XOR:
 	def sortKey(self):
 		return "__".join(item.sortKey() for item in self.__items)
 
+
 class Word:
 	__slots__ = (
 		"__items",
@@ -170,19 +176,21 @@ class Word:
 		for item in self.__items:
 			item.optimize(sortLex)
 
+
 class CrcGenError(Exception):
 	pass
+
 
 class CrcGen:
 	"""Combinatorial CRC algorithm generator.
 	"""
 
-	OPT_FLATTEN	= 1 << 0 # Flatten the bit operation tree
-	OPT_ELIMINATE	= 1 << 1 # Eliminate redundant operations
-	OPT_LEX		= 1 << 2 # Sort the operands in lexicographical order where possible
+	OPT_FLATTEN	 = 1 << 0  # Flatten the bit operation tree
+	OPT_ELIMINATE	 = 1 << 1  # Eliminate redundant operations
+	OPT_LEX		 = 1 << 2  # Sort the operands in lexicographical order where possible
 
-	OPT_NONE	= 0
-	OPT_ALL		= OPT_FLATTEN | OPT_ELIMINATE | OPT_LEX
+	OPT_NONE	 = 0
+	OPT_ALL		 = OPT_FLATTEN | OPT_ELIMINATE | OPT_LEX
 
 	def __init__(self,
 		     P,
@@ -210,7 +218,7 @@ class CrcGen:
 		))
 
 		# Construct the function input CRC word.
-		inCrc  = Word(*(
+		inCrc = Word(*(
 			Bit(crcVarName, i)
 			for i in range(nrCrcBits)
 		))
@@ -412,7 +420,7 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 		ret.append("    @always_comb")
 		ret.append("    def logic():")
 		for i, bit in enumerate(word):
-			ret.append(f"        {outCrcName}[{i}].next = {bit.gen_myhdl()}")
+			ret.append(f"        {outCrcName}.next[{i}] = {bit.gen_myhdl()}")
 		ret.append("    return logic")
 		ret.append("")
 		ret.append("if __name__ == '__main__':")
@@ -435,6 +443,7 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 		 includeGuards=True,
 		 includes=True):
 		word = self.__gen(dataVarName, crcVarName)
+
 		def makeCType(nrBits, name):
 			if nrBits <= 8:
 				cBits = 8
@@ -449,6 +458,7 @@ USE OR PERFORMANCE OF THIS SOFTWARE."""
 						  "bigger than 64 bit "
 						  "are not supported.")
 			return f"uint{cBits}_t"
+
 		cCrcType = makeCType(self._nrCrcBits, "CRC")
 		cDataType = makeCType(self._nrDataBits, "Input data")
 		ret = []
