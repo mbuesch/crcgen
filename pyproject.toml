@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "crcgen"
+description = "CRC algorithm HDL code generator (VHDL, Verilog, MyHDL)"
+readme = "README.rst"
+license = "GPL-2.0-or-later"
+license-files = ["COPYING"]
+authors = [
+	{ name = "Michael Büsch", email = "m@bues.ch" },
+]
+keywords = ["CRC", "Verilog", "VHDL", "MyHDL", "FPGA", "codegenerator"]
+requires-python = ">=3.7"
+classifiers = [
+	"Development Status :: 5 - Production/Stable",
+	"Environment :: Console",
+	"Intended Audience :: Developers",
+	"Intended Audience :: Education",
+	"Intended Audience :: Information Technology",
+	"Intended Audience :: Science/Research",
+	"Intended Audience :: Telecommunications Industry",
+	"Operating System :: OS Independent",
+	"Programming Language :: Python",
+	"Programming Language :: Python :: 3",
+	"Topic :: Education",
+	"Topic :: Scientific/Engineering",
+	"Topic :: Software Development",
+	"Topic :: Software Development :: Code Generators",
+	"Topic :: Utilities",
+]
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://bues.ch/h/crcgen"
+Repository = "https://github.com/mbuesch/crcgen"
+
+[project.scripts]
+crcgen = "libcrcgen.main:main"
+
+[tool.setuptools]
+packages = ["libcrcgen"]
+
+[tool.setuptools.dynamic]
+version = { attr = "libcrcgen.version.VERSION_STRING" }
+
+# vim: ts=8 sw=8 noexpandtab
